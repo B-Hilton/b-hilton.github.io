@@ -314,17 +314,6 @@
       crossorigin="anonymous"
     ></script>
   {% endif %}
-  {% if page.images.lightbox2 %}
-    <script
-      defer
-      src="{{ site.third_party_libraries.lightbox2.url.js }}"
-      integrity="{{ site.third_party_libraries.lightbox2.integrity.js }}"
-      crossorigin="anonymous"
-    ></script>
-  {% endif %}
-  {% if page.images.photoswipe %}
-    <script defer src="{{ '/assets/js/photoswipe-setup.js' | relative_url }}" type="module"></script>
-  {% endif %}
   {% if page.images.slider %}
     <script
       defer
@@ -339,15 +328,6 @@
       src="{{ site.third_party_libraries.spotlight.url.js }}"
       crossorigin="anonymous"
     ></script>
-  {% endif %}
-  {% if page.images.venobox %}
-    <script
-      defer
-      src="{{ site.third_party_libraries.venobox.url.js }}"
-      integrity="{{ site.third_party_libraries.venobox.integrity.js }}"
-      crossorigin="anonymous"
-    ></script>
-    <script defer src="{{ '/assets/js/venobox-setup.js' | relative_url | bust_file_cache }}" type="text/javascript"></script>
   {% endif %}
 {% endif %}
 
