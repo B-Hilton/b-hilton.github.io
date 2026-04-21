@@ -39,7 +39,7 @@ ninja.data = [{
           },
         },{id: "nav-cv",
           title: "CV",
-          description: "This is a description of the page. You can modify it in &#39;_pages/cv.md&#39;. You can also change or remove the top pdf download button.",
+          description: "Here is my CV for all who are interested! You can view it as a PDF if you&#39;d like!",
           section: "Navigation",
           handler: () => {
             window.location.href = "/cv/";
@@ -53,7 +53,7 @@ ninja.data = [{
           },
         },{id: "nav-people",
           title: "people",
-          description: "members of the lab or group",
+          description: "Cool people",
           section: "Navigation",
           handler: () => {
             window.location.href = "/people/";
