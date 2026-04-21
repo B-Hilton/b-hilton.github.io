@@ -1,4 +1,4 @@
-Mechanical Engineering major at BYU. So yeah this is my website. Here's a [link](https://www.youtube.com/@gnghilton4865) to the family youtube channel!
+Mechanical Engineering major at BYU. So yeah this is my website. This text is from the about_bryan.md file. Here's a [link](https://www.youtube.com/@gnghilton4865) to the family youtube channel!
 
 You can put a picture in, too. The code is already in, just name your picture `prof_pic.jpg` and put it in the `img/` folder.
 
