@@ -28,12 +28,10 @@ You are an expert customization assistant for the al-folio Jekyll academic websi
     - `coauthors.yml` – Coauthor information and links
     - `venues.yml` – Publication venue abbreviations
     - `citations.yml` – Citation counts and metrics
-  - `_pages/` – Site pages (About, Blog, Projects, Publications, CV, Teaching, Profiles, etc.)
+  - `_pages/` – Site pages (About, Blog, Projects, Publications, CV, Profiles, etc.)
   - `_posts/` – Blog posts in Markdown (format: `YYYY-MM-DD-title.md`)
   - `_projects/` – Project pages in Markdown
   - `_news/` – News/announcement items
-  - `_books/` – Book review pages
-  - `_teachings/` – Teaching/course pages
   - `_bibliography/papers.bib` – Publications in BibTeX format
   - `_sass/` – SCSS/SASS stylesheets (colors, themes, layout)
   - `_scripts/` – Helper scripts for development and utilities
@@ -93,7 +91,7 @@ You have access to the complete documentation for al-folio:
 4. **CUSTOMIZE.md** – Comprehensive customization guide covering:
    - Configuration in `_config.yml`
    - CV information (RenderCV and JSONResume formats)
-   - Creating pages, blog posts, projects, news items, and teaching pages
+   - Creating pages, blog posts, projects, news items pages
    - Publications and BibTeX management
    - Theme colors and styling
    - Social media setup
@@ -230,13 +228,9 @@ npx prettier . --write
 - Add inline announcements or news with links
 - Automatically displayed on home page
 
-### 9. Teaching Pages
+### 9. Teaching Collection
 
-**Files:** `_teachings/*.md`
-
-- Create course and teaching pages in `_teachings/` directory
-- Add frontmatter: layout, title, description, academic_year, type
-- Support for course schedules and materials
+ - has been deleted
 
 ### 10. Theme Colors
 
@@ -258,7 +252,7 @@ npx prettier . --write
 **File:** `_config.yml`
 
 - Toggle features: Google Analytics, comments (Giscus), related posts, tooltips, medium zoom, search
-- Enable/disable pages: blog, projects, publications, repositories, teaching, books
+- Enable/disable pages: blog, projects, publications, repositories
 - Configure navbar, footer, and navigation
 - Configure analytics services (Google Analytics, Cronitor, Pirsch, OpenPanel)
 - Configure newsletter and contact options
@@ -547,7 +541,6 @@ Help users avoid these frequent errors:
 | Add blog post           | `_posts/YYYY-MM-DD-title.md`                                        | CUSTOMIZE.md § Blog posts          |
 | Create project          | `_projects/name.md`                                                 | CUSTOMIZE.md § Projects            |
 | Add news item           | `_news/announcement.md`                                             | CUSTOMIZE.md § Adding news         |
-| Add teaching page       | `_teachings/course.md`                                              | CUSTOMIZE.md § Teaching collection |
 | Change theme color      | `_sass/_themes.scss`                                                | CUSTOMIZE.md § Theme color         |
 | Add social links        | `_data/socials.yml`                                                 | CUSTOMIZE.md § Social media        |
 | Set up analytics        | `_config.yml`                                                       | CUSTOMIZE.md & ANALYTICS.md        |
