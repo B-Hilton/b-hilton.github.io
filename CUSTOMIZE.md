@@ -45,6 +45,7 @@ Here we will give you some tips on how to customize the website. One important t
       - [Understanding Jekyll's special handling of fields](#understanding-jekylls-special-handling-of-fields)
       - [Example: Adding a custom "adaptations" field](#example-adding-a-custom-adaptations-field)
       - [Field naming best practices](#field-naming-best-practices)
+      - [Complete example: Book reviews with custom adaptations field](#complete-example-book-reviews-with-custom-adaptations-field)
   - [Adding a new publication](#adding-a-new-publication)
     - [Author annotation](#author-annotation)
     - [Buttons (through custom bibtex keywords)](#buttons-through-custom-bibtex-keywords)
