@@ -1,4 +1,4 @@
 User-agent: *
 Disallow:
 
-Sitemap: https://b-hilton.github.iohttps://b-hilton.github.io/sitemap.xml
+Sitemap: https://b-hilton.github.io//sitemap.xml
