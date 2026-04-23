@@ -1,7 +1,7 @@
 ---
 layout: page
-title: project 4
-description: another without an image
+title: HV research
+description: for surface wakefield proton acceleration
 img:
 importance: 3
 category: fun
