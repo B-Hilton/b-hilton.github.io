@@ -2,7 +2,7 @@
 layout: page
 permalink: /mongolia/
 title: Mongolia
-description: adventures, stories, pictures of the place I love
+description: adventures, stories, pictures of a place I love
 nav: false
 nav_order: 9
 ---
@@ -41,5 +41,5 @@ some text.
     some pictures.
 </div>
 
-I'll add more about my mission as I complete this website.
+I'll add more about my mission as I complete this website. Хайртай шүү манайхан!
 

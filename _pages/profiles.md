@@ -3,7 +3,7 @@ layout: profiles
 permalink: /people/
 title: people
 description: Cool people
-nav: true
+nav: false
 nav_order: 7
 
 profiles:
@@ -18,11 +18,11 @@ profiles:
       <p>BYU Address</p>
       <p>Provo, UT 84606</p>
   - align: left
-    image: bob_pic.jpg
-    content: about_bob.md
+    image: bryan_pic.jpg
+    content: about_bryan.md
     image_circular: false # crops the image to make it circular
     more_info: >
       <p>555 your office number</p>
       <p>123 your address street</p>
-      <p>Bob's address</p>
+      <p>Bryan's address</p>
 ---
