@@ -11,7 +11,7 @@ nav_order: 1
 
 Simulations/Calculations:
  ● [test circuits](https://www.falstad.com/circuit/)
- ● [- mix chemicals](https://cearun.grc.nasa.gov/)
+ ● [mix chemicals](https://cearun.grc.nasa.gov/)
  ● [quick & simple structural things](https://platform.skyciv.com/dashboard)
  ● [simple physics simulations](https://www.falstad.com/mathphysics.html)
 
