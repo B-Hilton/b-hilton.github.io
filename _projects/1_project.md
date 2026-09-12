@@ -27,7 +27,7 @@ This page describes some of the work I did for the BYU Physics department as a v
 
 <div class="row justify-content-sm-center">
     <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/past_projects/paschenPlasma.gif" title="plasma device testing" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/past_projects/paschen_plasma.png" title="plasma device testing" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm-8 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/past_projects/pump_repair.jpeg" title="rotary vane problems" class="img-fluid rounded z-depth-1" %}
@@ -38,10 +38,10 @@ This page describes some of the work I did for the BYU Physics department as a v
 </div>
 
 <div class="row justify-content-sm-center">
-    <div class="col-sm-8 mt-3 mt-md-0">
+    <div class="col-sm-7 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/past_projects/turbo_test.jpeg" title="TURBO" class="img-fluid rounded z-depth-1" %}
     </div>
-    <div class="col-sm-4 mt-3 mt-md-0">
+    <div class="col-sm-5 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/past_projects/turbo_test_sound.png" title="FFT" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
