@@ -1,5 +1,6 @@
-Mechanical Engineering major at BYU. So yeah this is my website. This text is from the about_bryan.md file. Here's a [link](https://www.youtube.com/@gnghilton4865) to the family youtube channel!
+Welcome to my new website! (some of it still under construction)
 
-Put your address / P.O. box / other info right below your picture. You can also disable any of these elements by editing `profile` property of the YAML header of your `_pages/about.md`. Edit `_bibliography/papers.bib` and Jekyll will render your [publications page](/al-folio/publications/) automatically.
+A little introduction:
+Currently a hard-working student researcher in the mechanical engineering program at Brigham Young University (graduation Apr. 2028), Bryan is the 2nd oldest of 10, hailing from the state of New Mexico. His main career goal is to promote clean and affordable energy solutions for people all around the world, and he sees great potential in the field of nuclear energy. He's always been driven to find out how the universe works, spending a good portion of his free time conducting experiments, building simulations, and reading literature. He wants to use this knowledge to the benefit of others, and so is seeking internship opportunities relevant to nuclear and renewable energy.
+His favorite thing to do is to go hiking with his friends in the mountains nearby. He loves meeting new people and hearing their stories. He cares about his family more than anything, and wants everyone he meets to also have such a plenfiful and joyful life.
 
-Link to your social media connections, too. This theme is set up to use [Font Awesome icons](https://fontawesome.com/) and [Academicons](https://jpswalsh.github.io/academicons/), like the ones below. Add your Facebook, Twitter, LinkedIn, Google Scholar, or just disable all of them.

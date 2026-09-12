@@ -3,7 +3,7 @@ cv:
   label: Student
   email: bryanghilton@gmail.com
   location: Provo, UT
-  image: ""
+  image: "bryan_pic.jpg"
   summary: A mechanical engineering student at Brigham Young University with a passion for nuclear-renewable hybrid energy systems.
 
   social_networks:
@@ -15,10 +15,10 @@ cv:
       username: Bryan Hilton
 
   address:
-    street: street address here
+    street: 500N 267E Victoria Place II
     city: Provo
     region: Utah
-    postalCode: 00000
+    postalCode: 84606
     countryCode: US
 
   sections:
@@ -31,7 +31,7 @@ cv:
         start_date: 2024
         end_date: 2028
         score: ""
-        courses: "Theory of Relativity"
+        courses: ""
         highlights:
           - Description 1.
           - Description 2.
@@ -47,26 +47,25 @@ cv:
           - Description 2.
 
     Experience:
+      - company: BYU TEMP Lab
+        position: Research Assistant
+        location: Provo, Utah
+        start_date: 2026
+        end_date: ---
+        summary: Thermal analysis of SiC/SiC composites for nuclear fuel cladding applications.
+        highlights:
+          - Mass Data Collection and Analysis
+          - Laser Flash Thermal Diffusivity Testing
       - company: BYU Physics Department
         position: Vacuum Technician
         location: Eyring Science Center at Brigham Young University, UT
         start_date: 2025
         end_date: 2026
-        summary: Designed, assembled, and repaired high vacuum systems, pumps, and gauges. Built and troubleshot high voltage power supplies for a Paschen’s Law demonstration. Repaired and calibrated capacitance manometers and other analog electronics.
+        summary: Designed, assembled, and repaired high vacuum systems, pumps, gauges, and high voltage power supplies. Repaired and calibrated capacitance manometers and other analog electronics.
         highlights:
           - High Vacuum System Design, Maintenance, and Operation
           - Precision Analog Measurement
           - High Voltage Systems
-
-      - company: California Institute of Technology
-        position: Visiting Professor
-        location: Pasadena, California, US
-        start_date: 1933
-        end_date: 1933
-        highlights:
-          - Description 1.
-          - Description 2.
-
       - company: Kaiser Wilhelm Institute for Physics
         position: Director
         location: Berlin, Germany
@@ -74,6 +73,16 @@ cv:
         end_date: 1933
 
     Volunteer:
+      - company: American Nuclear Society BYU student chapter
+        position: Activities Chair
+        location: Provo, Utah
+        start_date: 2026
+        end_date: ---
+        summary: Planned and organized social and networking events for the BYU ANS student chapter.
+        highlights:
+          - Building a monte carlo neutron transport simulation in Python
+          - Contacting foreign and domestic professionals
+          - Designing cloud chambers and other physics experiments for outreach events
       - company: San Juan Regional Medical Center
         position: ---
         location: ---
@@ -84,24 +93,6 @@ cv:
           - "---"
           - "---"
 
-    Awards:
-      - title: Nobel Prize in Physics
-        authors:
-          - "Royal Swedish Academy of Sciences"
-        date: 1921-11-01
-        awarder: Royal Swedish Academy of Sciences
-        url: https://www.nobelprize.org/prizes/physics/1921/einstein/biographical/
-        summary: The Nobel Prizes are five separate prizes that, according to Alfred Nobel's will of 1895, are awarded to 'those who, during the preceding year, have conferred the greatest benefit to humankind.'
-
-    Publications:
-      - title: N/A
-        authors:
-          - Albert Einstein
-        publisher: Annalen der Physik
-        releaseDate: 1905-06-30
-        url: https://en.wikisource.org/wiki/Translation:On_the_Electrodynamics_of_Moving_Bodies
-        summary: It concerned an interpretation of the Michelson–Morley experiment and the properties of light and time. Special relativity incorporates the principle that the speed of light is the same for all inertial observers regardless of the state of motion of the source.
-
     Skills:
       - name: Physics
         level: Master
@@ -111,7 +102,6 @@ cv:
     Languages:
       - name: English
         summary: "Native speaker"
-
       - name: Mongolian
         summary: "Fluent"
 
@@ -119,12 +109,6 @@ cv:
       - name: Nuclear & Renewable Energy
         icon: fa-solid fa-tag
         keywords: "Renewable Energy, Nuclear Energy, Integrated Nuclear-Renewable Energy System (INRES), Nuclear-Renewable Microgrid (NRM), Small Modular Reactor (SMR), Molten Salt Reactor (MSR), Energy Storage"
-
-    Certificates:
-      - name: Machine Learning
-        date: 2018-01-01
-        issuer: Stanford University
-        icon: fa-solid fa-location-dot
 
     Projects:
       - name: Quantum Computing

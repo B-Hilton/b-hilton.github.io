@@ -2,7 +2,7 @@
 layout: page
 permalink: /mongolia/
 title: Mongolia
-description: adventures, stories, pictures of a place I love
+description: incomplete page; adventures, stories, pictures of a place I love
 nav: false
 nav_order: 9
 ---
