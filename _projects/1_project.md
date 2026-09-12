@@ -1,8 +1,8 @@
 ---
 layout: page
-title: project 1
-description: with background image
-img: assets/img/12.jpg
+title: BYU Physics
+description: life as a vacuum technician
+img: assets/img/past_projects/pump_repair.jpeg
 importance: 1
 category: work
 related_publications: true
@@ -12,28 +12,19 @@ Every project has a beautiful feature showcase page.
 It's easy to include images in a flexible 3-column grid format.
 Make your photos 1/3, 2/3, or full width.
 
-To give your project a background in the portfolio page, just add the img tag to the front matter like so:
-
-    ---
-    layout: page
-    title: project
-    description: a project with a background image
-    img: /assets/img/12.jpg
-    ---
-
 <div class="row">
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/1.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid loading="eager" path="assets/img/past_projects/z_pinch_frames.gif" title="flourescence" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/3.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid loading="eager" path="assets/img/past_projects/z_plasma.png" title="plasma" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/5.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid loading="eager" path="assets/img/past_projects/z_pinch_principle.gif" title="principle" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
-    Caption photos easily. On the left, a road goes through a tunnel. Middle, leaves artistically fall in a hipster photoshoot. Right, in another hipster photoshoot, a lumberjack grasps a handful of pine needles.
+    This was neat to see. A large capacitor at 30kV discharges through a thin tungsten wire, vaporizing it and causing a plasma z-pinch. The frames of slow motion footage show green flourescence from the plastic around the tungsten wire. The middle picture is of the plasma pinch, the last is a reminder of how we can use this z-pinch to compress plasmas containing hydrogen to cause nuclear fusion reactions.
 </div>
 <div class="row">
     <div class="col-sm mt-3 mt-md-0">
@@ -49,21 +40,45 @@ Say you wanted to write a bit about your project before you posted the rest of t
 You describe how you toiled, sweated, _bled_ for your project, and then... you reveal its glory in the next row of images.
 
 <div class="row justify-content-sm-center">
-    <div class="col-sm-8 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/6.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
     <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/11.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/past_projects/paschenPlasma" title="plasma device testing" class="img-fluid rounded z-depth-1" %}
+    </div>
+    <div class="col-sm-8 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/past_projects/pump_repair.jpeg" title="rotary vane problems" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
-    You can also have artistically styled 2/3 + 1/3 images, like these.
+    We built devices to teach about plasma and the Paschen curve. A common sight on the job.
 </div>
 
-The code is simple.
-Just wrap your images with `<div class="col-sm">` and place them inside `<div class="row">` (read more about the <a href="https://getbootstrap.com/docs/4.4/layout/grid/">Bootstrap Grid</a> system).
-To make images responsive, add `img-fluid` class to each; for rounded corners and shadows use `rounded` and `z-depth-1` classes.
-Here's the code for the last row of images above:
+<div class="row justify-content-sm-center">
+    <div class="col-sm-8 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/past_projects/turbo_test.jpeg" title="TURBO" class="img-fluid rounded z-depth-1" %}
+    </div>
+    <div class="col-sm-4 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/past_projects/turbo_test_sound.png" title="FFT" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    Testing a turbo pump system. I found it interesting to see the resonances on an audio FFT during spin-down.
+</div>
+
+<div class="row">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/past_projects/bug.jpeg" title="a hardware bug" class="img-fluid rounded z-depth-1" %}
+    </div>
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/past_projects/large_dirty_chamber.jpeg" title="defunct spectral analysis" class="img-fluid rounded z-depth-1" %}
+    </div>
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/past_projects/tube_furnace.jpeg" title="Into the Dragon's Lair" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    Damage due to a literal hardware bug (see if you can spot it). Taking apart a large spectral analysis setup. Norbert the tube furnace.
+</div>
+
+
 
 {% raw %}
 
