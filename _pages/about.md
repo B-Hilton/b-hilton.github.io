@@ -2,16 +2,16 @@
 layout: about
 title: about
 permalink: /
-subtitle: <a href='#'>Affiliations</a>. Address. Contacts. Motto. Etc.
+subtitle: Mechanical Engineering student at BYU
 
 profile:
   align: right
   image: bryan_pic.jpg
   image_circular: false # crops the image to make it circular
   more_info: >
-    <p>addr.</p>
-    <p>BYU address</p>
+    <p>500N 267E Victoria Place II</p>
     <p>Provo, UT 84606</p>
+    <p>USA</p>
 
 selected_papers: false # includes a list of papers marked as "selected={true}"
 social: true # includes social icons at the bottom of the page
