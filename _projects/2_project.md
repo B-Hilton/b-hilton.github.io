@@ -1,11 +1,11 @@
 ---
 layout: page
-title: project 2
-description: GOKarter Ewell
+title: American Nuclear Society
+description: Building Simulations and Demos for the BYU student chapter
 img: assets/img/3.jpg
 importance: 2
 category: work
-giscus_comments: true
+giscus_comments: false
 ---
 
 
@@ -51,15 +51,27 @@ Say you wanted to write a little bit about your project before you posted the re
 You describe how you toiled, sweated, _bled_ for your project, and then... you reveal its glory in the next row of images.
 
 <div class="row justify-content-sm-center">
-    <div class="col-sm-8 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/6.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
     <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/11.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/past_projects/early_version.gif" title="python fissionmunk library" class="img-fluid rounded z-depth-1" %}
+    </div>
+    <div class="col-sm-8 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/past_projects/building_the_interaction_handler.png" title="Interaction Handler" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
-    You can also have artistically styled 2/3 + 1/3 images, like these.
+    I started out by using a python library called fissionmunk for its simplicity, but it was too simple. I then decided to build my own interaction handler using actual neutron cross-section data from the NNDC's EDNF library. That was a bigger step up in complexity than I had expected.
+</div>
+
+<div class="row justify-content-sm-center">
+    <div class="col-sm-7 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/past_projects/early_ping_pong.jpeg" title="python fissionmunk library" class="img-fluid rounded z-depth-1" %}
+    </div>
+    <div class="col-sm-5 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/6.jpg" title="Interaction Handler" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    An electrostatic ping-pong ball accelerator; the early prototype made from scraps, and later, the full thing.
 </div>
 
 The code is simple.
