@@ -40,7 +40,7 @@ From June 2022 to July 2024, I served as an English teacher and missionary for t
 
 <div class="row justify-content-sm-center">
     <div class="col-sm-8 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/mongolia_img/summer_horoolol" title="probably near altan owoo" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/mongolia_img/summer_horoolol.jpeg" title="probably near altan owoo" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm-4 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/mongolia_img/buuz_time.jpg" title="making yummy meat dumplings" class="img-fluid rounded z-depth-1" %}
