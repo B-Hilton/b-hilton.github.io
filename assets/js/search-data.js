@@ -418,9 +418,9 @@ ninja.data = [{
           section: "News",},{id: "news-bryan-s-profile-website-is-created",
           title: 'Bryan’s profile website is created!',
           description: "",
-          section: "News",},{id: "projects-project-1",
-          title: 'project 1',
-          description: "with background image",
+          section: "News",},{id: "projects-byu-physics",
+          title: 'BYU Physics',
+          description: "life as a vacuum technician",
           section: "Projects",handler: () => {
               window.location.href = "/projects/1_project/";
             },},{id: "projects-american-nuclear-society",
