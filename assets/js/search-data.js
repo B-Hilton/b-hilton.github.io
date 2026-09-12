@@ -420,7 +420,7 @@ ninja.data = [{
           description: "",
           section: "News",},{id: "projects-byu-physics",
           title: 'BYU Physics',
-          description: "life as a vacuum technician",
+          description: "Life as a vacuum technician",
           section: "Projects",handler: () => {
               window.location.href = "/projects/1_project/";
             },},{id: "projects-american-nuclear-society",
