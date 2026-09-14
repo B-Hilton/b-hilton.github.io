@@ -30,21 +30,11 @@ cv:
         studyType: BE
         start_date: 2024
         end_date: 2028
-        score: ""
-        courses: ""
+        score: "3.80 GPA"
+        courses: "137 credits completed"
         highlights:
-          - Description 1.
-          - Description 2.
-
-      - institution: Eidgenössische Technische Hochschule
-        location: Zurich, Switzerland
-        area: Physics
-        studyType: Federal teaching diploma
-        start_date: 1896
-        end_date: 1900
-        highlights:
-          - Description 1.
-          - Description 2.
+          - Led many team projects
+          - Participated in 3 engineering clubs and many volunteer activities
 
     Experience:
       - company: BYU TEMP Lab
@@ -68,17 +58,11 @@ cv:
           - Precision Analog Measurement
           - High Voltage Systems
 
-      - company: Kaiser Wilhelm Institute for Physics
-        position: Director
-        location: Berlin, Germany
-        start_date: 1917
-        end_date: 1933
-
     Volunteer:
       - company: American Nuclear Society BYU student chapter
         position: Activities Chair
         location: Provo, Utah
-        start_date: 2026
+        start_date: April 2026
         end_date: ---
         summary: Planned and organized social and networking events for the BYU ANS student chapter.
         highlights:
@@ -86,20 +70,37 @@ cv:
           - Contacting foreign and domestic professionals
           - Designing cloud chambers and other physics experiments for outreach events
       - company: San Juan Regional Medical Center
-        position: ---
-        location: ---
-        start_date: ---
-        end_date: ---
-        summary: ---
-        highlights:
-          - "---"
-          - "---"
+        position: Information Desk Assistant
+        location: Farmington, New Mexico
+        start_date: 2017
+        end_date: 2019
+        summary: 100+ hours of volunteer work at the information desk
 
     Skills:
-      - name: Physics
-        level: Master
-        icon: fa-solid fa-hashtag
-        keywords: "Quantum Mechanics, Quantum Computing, Quantum Information, Quantum Cryptography, Quantum Communication, Quantum Teleportation"
+      - name: High Vacuum Systems
+        level: Advanced
+        icon: fa-solid
+        keywords: "Vacuum System Design, Leak Testing, Cryogenic Systems, Vacuum Gauge Calibration, Pump Maintenance & Repair"
+      - name: High Voltage Systems
+        level: Advanced
+        icon: fa-solid
+        keywords: "High Voltage Safety, HV Power Supply Design, HVDC & HVAC Systems"
+      - name: CAD & Simulation
+        level: Intermediate
+        icon: fa-solid
+        keywords: "OnShape, SolidWorks, OpenMC, Custom Monte Carlo Simulation"
+      - name: Programming
+        level: Advanced
+        icon: fa-solid
+        keywords: "Python, C/C++/C#, HTML, MATLAB, LaTeX"
+      - name: Microcontrollers
+        level: Advanced
+        icon: fa-solid
+        keywords: "Arduino, Raspberry Pi, LIDAR, Wireless, Sensors, Motor Control"
+      - name: Shop Skills
+        level: Advanced
+        icon: fa-solid
+        keywords: "Manual Machining, Soldering, 3D Printing, Laser Cutting, Woodworking, Sheet Metal Forming"
 
     Languages:
       - name: English
@@ -111,21 +112,3 @@ cv:
       - name: Nuclear & Renewable Energy
         icon: fa-solid fa-tag
         keywords: "Renewable Energy, Nuclear Energy, Integrated Nuclear-Renewable Energy System (INRES), Nuclear-Renewable Microgrid (NRM), Small Modular Reactor (SMR), Molten Salt Reactor (MSR), Energy Storage"
-
-    Projects:
-      - name: Quantum Computing
-        summary: Quantum computing is the use of quantum-mechanical phenomena such as superposition and entanglement to perform computation. Computers that perform quantum computations are known as quantum computers.
-        highlights:
-          - Quantum Teleportation
-          - Quantum Cryptography
-        start_date: 2018-01-01
-        end_date: 2018-01-01
-
-    References:
-      - name: Professor John Doe
-        icon: fa-solid fa-laptop
-        reference: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam condimentum, diam quis convallis euismod, arcu mi ullamcorper lorem, a vestibulum nunc magna at sem. Sed in risus ac felis varius blandit.
-
-      - name: Professor Jane Smith
-        icon: fa-solid fa-thumbtack
-        reference: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam condimentum, diam quis convallis euismod, arcu mi ullamcorper lorem, a vestibulum nunc magna at sem. Sed in risus ac felis varius blandit.
