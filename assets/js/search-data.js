@@ -407,16 +407,14 @@ ninja.data = [{
             window.location.href = "/blog/2015/formatting-and-links/";
           
         },
-      },{id: "news-a-long-announcement-with-details",
-          title: 'A long announcement with details',
-          description: "",
-          section: "News",handler: () => {
-              window.location.href = "/news/announcement_2/";
-            },},{id: "news-a-simple-inline-announcement-with-markdown-emoji-sparkles-smile",
-          title: 'A simple inline announcement with Markdown emoji! :sparkles: :smile:',
-          description: "",
-          section: "News",},{id: "news-bryan-s-profile-website-is-created",
+      },{id: "news-bryan-s-profile-website-is-created",
           title: 'Bryan’s profile website is created!',
+          description: "",
+          section: "News",},{id: "news-added-hv-research-project",
+          title: 'Added HV research project',
+          description: "",
+          section: "News",},{id: "news-updated-cv",
+          title: 'Updated CV',
           description: "",
           section: "News",},{id: "projects-byu-physics",
           title: 'BYU Physics',
