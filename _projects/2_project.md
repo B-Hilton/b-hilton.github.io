@@ -12,15 +12,6 @@ giscus_comments: false
 Helping out with the BYU chapter of American Nuclear Society has been great. So far, I've organized and hosted the opening social, attended a few symposiums, toured some nuclear facilities, and met with some really cool professionals. I'm currently learning OpenMC, designing and building cloud chambers and other classroom demos, building an easy-to-use interactive Monte Carlo neutron transport simulation, and serving in educational outreach.
 
 
-<div class="row">
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/5.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-    </div>
-</div>
-<div class="caption">
-    This image can also have a caption. It's like magic.
-</div>
-
 <div class="row justify-content-sm-center">
     <div class="col-sm-4 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/past_projects/early_version.gif" title="python fissionmunk library" class="img-fluid rounded z-depth-1" %}
@@ -44,23 +35,3 @@ Helping out with the BYU chapter of American Nuclear Society has been great. So 
 <div class="caption">
     An electrostatic ping-pong ball accelerator; the early prototype made from scraps, and later, the full thing.
 </div>
-
-The code is simple.
-Just wrap your images with `<div class="col-sm">` and place them inside `<div class="row">` (read more about the <a href="https://getbootstrap.com/docs/4.4/layout/grid/">Bootstrap Grid</a> system).
-To make images responsive, add `img-fluid` class to each; for rounded corners and shadows use `rounded` and `z-depth-1` classes.
-Here's the code for the last row of images above:
-
-{% raw %}
-
-```html
-<div class="row justify-content-sm-center">
-  <div class="col-sm-8 mt-3 mt-md-0">
-    {% include figure.liquid path="assets/img/6.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-  </div>
-  <div class="col-sm-4 mt-3 mt-md-0">
-    {% include figure.liquid path="assets/img/11.jpg" title="example image" class="img-fluid rounded z-depth-1" %}
-  </div>
-</div>
-```
-
-{% endraw %}
