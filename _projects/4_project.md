@@ -54,6 +54,6 @@ So yeah documentation is a pain.
     </div>
 </div>
 <div class="caption">
-    Sumilating, building, and upgrading the voltage multiplier.
+    Simulating, building, and upgrading the voltage multiplier.
 </div>
 
