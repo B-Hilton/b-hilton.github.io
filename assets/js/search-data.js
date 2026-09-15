@@ -428,7 +428,7 @@ ninja.data = [{
               window.location.href = "/projects/2_project/";
             },},{id: "projects-hv-research",
           title: 'HV research',
-          description: "for surface wakefield proton acceleration",
+          description: "Surface wakefield acceleration for proton therapy",
           section: "Projects",handler: () => {
               window.location.href = "/projects/4_project/";
             },},{
