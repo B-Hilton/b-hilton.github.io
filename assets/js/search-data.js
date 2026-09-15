@@ -7,42 +7,42 @@ ninja.data = [{
     title: "about",
     section: "Navigation",
     handler: () => {
-      window.location.href = "/";
+      window.location.href = "/b-hilton.github.io/";
     },
   },{id: "nav-resources",
           title: "resources",
           description: "useful things that I have come across",
           section: "Navigation",
           handler: () => {
-            window.location.href = "/resources/";
+            window.location.href = "/b-hilton.github.io/resources/";
           },
         },{id: "nav-projects",
           title: "projects",
           description: "A collection of fun things I have worked on",
           section: "Navigation",
           handler: () => {
-            window.location.href = "/projects/";
+            window.location.href = "/b-hilton.github.io/projects/";
           },
         },{id: "nav-cv",
           title: "CV",
           description: "Here is my CV for all who are interested! You can view it as a PDF if you&#39;d like!",
           section: "Navigation",
           handler: () => {
-            window.location.href = "/cv/";
+            window.location.href = "/b-hilton.github.io/cv/";
           },
         },{id: "dropdown-mongolia",
               title: "Mongolia",
               description: "",
               section: "Dropdown",
               handler: () => {
-                window.location.href = "/mongolia/";
+                window.location.href = "/b-hilton.github.io/mongolia/";
               },
             },{id: "dropdown-blog",
               title: "blog",
               description: "",
               section: "Dropdown",
               handler: () => {
-                window.location.href = "/blog/";
+                window.location.href = "/b-hilton.github.io/blog/";
               },
             },{id: "post-a-post-with-plotly-js",
         
@@ -52,7 +52,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2025/plotly/";
+            window.location.href = "/b-hilton.github.io/blog/2025/plotly/";
           
         },
       },{id: "post-a-post-with-image-galleries",
@@ -63,7 +63,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/photo-gallery/";
+            window.location.href = "/b-hilton.github.io/blog/2024/photo-gallery/";
           
         },
       },{id: "post-google-gemini-updates-flash-1-5-gemma-2-and-project-astra",
@@ -85,7 +85,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/tabs/";
+            window.location.href = "/b-hilton.github.io/blog/2024/tabs/";
           
         },
       },{id: "post-a-post-with-typograms",
@@ -96,7 +96,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/typograms/";
+            window.location.href = "/b-hilton.github.io/blog/2024/typograms/";
           
         },
       },{id: "post-a-post-that-can-be-cited",
@@ -107,7 +107,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/post-citation/";
+            window.location.href = "/b-hilton.github.io/blog/2024/post-citation/";
           
         },
       },{id: "post-a-post-with-pseudo-code",
@@ -118,7 +118,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/pseudocode/";
+            window.location.href = "/b-hilton.github.io/blog/2024/pseudocode/";
           
         },
       },{id: "post-a-post-with-code-diff",
@@ -129,7 +129,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/code-diff/";
+            window.location.href = "/b-hilton.github.io/blog/2024/code-diff/";
           
         },
       },{id: "post-a-post-with-advanced-image-components",
@@ -140,7 +140,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/advanced-images/";
+            window.location.href = "/b-hilton.github.io/blog/2024/advanced-images/";
           
         },
       },{id: "post-a-post-with-vega-lite",
@@ -151,7 +151,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/vega-lite/";
+            window.location.href = "/b-hilton.github.io/blog/2024/vega-lite/";
           
         },
       },{id: "post-a-post-with-geojson",
@@ -162,7 +162,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/geojson-map/";
+            window.location.href = "/b-hilton.github.io/blog/2024/geojson-map/";
           
         },
       },{id: "post-a-post-with-echarts",
@@ -173,7 +173,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/echarts/";
+            window.location.href = "/b-hilton.github.io/blog/2024/echarts/";
           
         },
       },{id: "post-a-post-with-chart-js",
@@ -184,7 +184,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2024/chartjs/";
+            window.location.href = "/b-hilton.github.io/blog/2024/chartjs/";
           
         },
       },{id: "post-a-post-with-tikzjax",
@@ -195,7 +195,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/tikzjax/";
+            window.location.href = "/b-hilton.github.io/blog/2023/tikzjax/";
           
         },
       },{id: "post-a-post-with-bibliography",
@@ -206,7 +206,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/post-bibliography/";
+            window.location.href = "/b-hilton.github.io/blog/2023/post-bibliography/";
           
         },
       },{id: "post-a-post-with-jupyter-notebook",
@@ -217,7 +217,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/jupyter-notebook/";
+            window.location.href = "/b-hilton.github.io/blog/2023/jupyter-notebook/";
           
         },
       },{id: "post-a-post-with-custom-blockquotes",
@@ -228,7 +228,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/custom-blockquotes/";
+            window.location.href = "/b-hilton.github.io/blog/2023/custom-blockquotes/";
           
         },
       },{id: "post-a-post-with-table-of-contents-on-a-sidebar",
@@ -239,7 +239,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/sidebar-table-of-contents/";
+            window.location.href = "/b-hilton.github.io/blog/2023/sidebar-table-of-contents/";
           
         },
       },{id: "post-a-post-with-audios",
@@ -250,7 +250,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/audios/";
+            window.location.href = "/b-hilton.github.io/blog/2023/audios/";
           
         },
       },{id: "post-a-post-with-videos",
@@ -261,7 +261,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/videos/";
+            window.location.href = "/b-hilton.github.io/blog/2023/videos/";
           
         },
       },{id: "post-displaying-beautiful-tables-with-bootstrap-tables",
@@ -272,7 +272,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/tables/";
+            window.location.href = "/b-hilton.github.io/blog/2023/tables/";
           
         },
       },{id: "post-a-post-with-table-of-contents",
@@ -283,7 +283,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2023/table-of-contents/";
+            window.location.href = "/b-hilton.github.io/blog/2023/table-of-contents/";
           
         },
       },{id: "post-a-post-with-giscus-comments",
@@ -294,7 +294,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2022/giscus-comments/";
+            window.location.href = "/b-hilton.github.io/blog/2022/giscus-comments/";
           
         },
       },{id: "post-displaying-external-posts-on-your-al-folio-blog",
@@ -316,7 +316,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/assets/pdf/example_pdf.pdf";
+            window.location.href = "/b-hilton.github.io/assets/pdf/example_pdf.pdf";
           
         },
       },{id: "post-a-post-with-diagrams",
@@ -327,7 +327,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2021/diagrams/";
+            window.location.href = "/b-hilton.github.io/blog/2021/diagrams/";
           
         },
       },{id: "post-a-distill-style-blog-post",
@@ -338,7 +338,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2021/distill/";
+            window.location.href = "/b-hilton.github.io/blog/2021/distill/";
           
         },
       },{id: "post-a-post-with-twitter",
@@ -349,7 +349,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2020/twitter/";
+            window.location.href = "/b-hilton.github.io/blog/2020/twitter/";
           
         },
       },{id: "post-a-post-with-disqus-comments",
@@ -360,7 +360,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2015/disqus-comments/";
+            window.location.href = "/b-hilton.github.io/blog/2015/disqus-comments/";
           
         },
       },{id: "post-a-post-with-math",
@@ -371,7 +371,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2015/math/";
+            window.location.href = "/b-hilton.github.io/blog/2015/math/";
           
         },
       },{id: "post-a-post-with-code",
@@ -382,7 +382,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2015/code/";
+            window.location.href = "/b-hilton.github.io/blog/2015/code/";
           
         },
       },{id: "post-a-post-with-images",
@@ -393,7 +393,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2015/images/";
+            window.location.href = "/b-hilton.github.io/blog/2015/images/";
           
         },
       },{id: "post-a-post-with-formatting-and-links",
@@ -404,7 +404,7 @@ ninja.data = [{
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2015/formatting-and-links/";
+            window.location.href = "/b-hilton.github.io/blog/2015/formatting-and-links/";
           
         },
       },{id: "news-bryan-s-profile-website-is-created",
@@ -420,17 +420,17 @@ ninja.data = [{
           title: 'BYU Physics',
           description: "Life as a vacuum technician",
           section: "Projects",handler: () => {
-              window.location.href = "/projects/1_project/";
+              window.location.href = "/b-hilton.github.io/projects/1_project/";
             },},{id: "projects-american-nuclear-society",
           title: 'American Nuclear Society',
           description: "Building Simulations and Demos for the BYU student chapter",
           section: "Projects",handler: () => {
-              window.location.href = "/projects/2_project/";
+              window.location.href = "/b-hilton.github.io/projects/2_project/";
             },},{id: "projects-hv-research",
           title: 'HV research',
           description: "Surface wakefield acceleration for proton therapy",
           section: "Projects",handler: () => {
-              window.location.href = "/projects/4_project/";
+              window.location.href = "/b-hilton.github.io/projects/4_project/";
             },},{
         id: 'social-cv',
         title: 'CV',
