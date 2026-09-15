@@ -4,7 +4,7 @@ title: BYU Physics
 description: Life as a vacuum technician
 img: assets/img/past_projects/pump_repair.jpeg
 importance: 1
-category: work
+category: STEM
 ---
 
 This page describes some of the work I did for the BYU Physics department as a vacuum technician. I learned so much and I'm greatful for all those who helped me along the way and taught me many important skills. Shoutout especially to John and Robert!

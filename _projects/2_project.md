@@ -4,8 +4,7 @@ title: American Nuclear Society
 description: Building Simulations and Demos for the BYU student chapter
 img: assets/img/past_projects/ANS_page_logo.png
 importance: 2
-category: work
-giscus_comments: false
+category: STEM
 ---
 
 
@@ -29,7 +28,7 @@ Helping out with the BYU chapter of American Nuclear Society has been great. So 
         {% include figure.liquid path="assets/img/past_projects/early_ping_pong.jpeg" title="python fissionmunk library" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm-5 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/6.jpg" title="blank" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/no_image.png" title="blank" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
