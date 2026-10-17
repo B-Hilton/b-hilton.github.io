@@ -12,13 +12,15 @@ nav_order: 9
 <div class="row justify-content-sm-center">
     <div class="col-sm-4 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/mongolia_img/christmas.jpg" title="Christmas tree" class="img-fluid rounded z-depth-1" %}
+        Christmas on Sukhbaatar Square.
     </div>
     <div class="col-sm-8 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/mongolia_img/english_class.png" title="English class in Choibalsan" class="img-fluid rounded z-depth-1" %}
+        Taught a lot of English class.
     </div>
 </div>
 <div class="caption">
-    Christmas on Sukhbaatar Square. Taught a lot of English class.
+     text
 </div>
 
 <div class="row justify-content-sm-center">
@@ -44,7 +46,7 @@ nav_order: 9
     </div>
     <div class="col-sm mt-3 mt-md-0">
         {% include figure.liquid loading="eager" path="assets/img/mongolia_img/buuz_time.jpg" title="making yummy meat dumplings" class="img-fluid rounded z-depth-1" %}
-        A flooded park.
+        Making бууз with friends.
     </div>
 </div>
 <div class="caption">
