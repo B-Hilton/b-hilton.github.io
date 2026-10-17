@@ -9,14 +9,7 @@ ninja.data = [{
     handler: () => {
       window.location.href = "/";
     },
-  },{id: "nav-resources",
-          title: "resources",
-          description: "useful things that I have come across",
-          section: "Navigation",
-          handler: () => {
-            window.location.href = "/resources/";
-          },
-        },{id: "nav-projects",
+  },{id: "nav-projects",
           title: "projects",
           description: "A collection of fun things I have worked on",
           section: "Navigation",
@@ -37,12 +30,12 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "/mongolia/";
               },
-            },{id: "dropdown-blog",
-              title: "blog",
+            },{id: "dropdown-resources",
+              title: "resources",
               description: "",
               section: "Dropdown",
               handler: () => {
-                window.location.href = "/blog/";
+                window.location.href = "/resources/";
               },
             },{id: "post-a-post-with-plotly-js",
         
