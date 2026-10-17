@@ -11,29 +11,33 @@ nav_order: 9
 
 <div class="row justify-content-sm-center">
     <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/mongolia_img/christmas.jpg" title="Christmas tree" class="img-fluid rounded z-depth-1" %}
-        Christmas on Sukhbaatar Square.
+        {% include figure.liquid path="assets/img/mongolia_img/sled.jpg" title="New York, Darkhan" class="img-fluid rounded z-depth-1" %}
+        A young man considering his future career.
     </div>
     <div class="col-sm-8 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/mongolia_img/english_class.png" title="English class in Choibalsan" class="img-fluid rounded z-depth-1" %}
-        Taught a lot of English class.
+        Teaching English class.
     </div>
 </div>
 <div class="caption">
-     text
+     
 </div>
+
 
 <div class="row justify-content-sm-center">
     <div class="col-sm-8 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/mongolia_img/summer_horoolol.jpeg" title="probably near altan owoo" class="img-fluid rounded z-depth-1" %}
+        A common scene.
     </div>
     <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/mongolia_img/shine_jiliin_nar.jpeg" title="Tsagaan Sar" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/mongolia_img/christmas.jpg" title="Christmas tree" class="img-fluid rounded z-depth-1" %}
+        Christmas in Ulaanbaatar.
     </div>
 </div>
 <div class="caption">
-    text
+    
 </div>
+
 
 <div class="row">
     <div class="col-sm mt-3 mt-md-0">
@@ -42,7 +46,7 @@ nav_order: 9
     </div>
     <div class="col-sm mt-3 mt-md-0">
         {% include figure.liquid loading="eager" path="assets/img/mongolia_img/flooded_field.jpg" title="Kerlengiin ereg deer" class="img-fluid rounded z-depth-1" %}
-        The rising sun of a new year.
+        The river when it floods.
     </div>
     <div class="col-sm mt-3 mt-md-0">
         {% include figure.liquid loading="eager" path="assets/img/mongolia_img/buuz_time.jpg" title="making yummy meat dumplings" class="img-fluid rounded z-depth-1" %}
@@ -50,22 +54,41 @@ nav_order: 9
     </div>
 </div>
 <div class="caption">
-    Scenes from Dornod.
+    
 </div>
 
-<div class="row">
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/sled.jpg" title="New York, Darkhan" class="img-fluid rounded z-depth-1" %}
+
+<div class="row justify-content-sm-center">
+    <div class="col-sm-8 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/mongolia_img/shine_jiliin_nar.jpeg" title="Tsagaan Sar" class="img-fluid rounded z-depth-1" %}
+        The rising sun of a new year.
     </div>
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/ger_cat.jpg" title="muur" class="img-fluid rounded z-depth-1" %}
-    </div>
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/tumur_zam.jpeg" title="(48.110194, 114.569499)" class="img-fluid rounded z-depth-1" %}
+    <div class="col-sm-4 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/mongolia_img/ger_cat.jpg" title="muur" class="img-fluid rounded z-depth-1" %}
+        A ger cat.
     </div>
 </div>
 <div class="caption">
-    A young man considering his future career. A ger cat. A missionary.
+     
+</div>
+
+
+<div class="row">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/darkhan.jpg" title="My friends" class="img-fluid rounded z-depth-1" %}
+        First and second year in Darkhan.
+    </div>
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/mtc_duureg.jpg" title="MTC District" class="img-fluid rounded z-depth-1" %}
+        Missionary Training Center
+    </div>
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/tumur_zam.jpeg" title="(48.110194, 114.569499)" class="img-fluid rounded z-depth-1" %}
+        A happy missionary.
+    </div>
+</div>
+<div class="caption">
+    
 </div>
 
 I'll add more about my mission as I complete this website. Хайртай шүү манайхан!
