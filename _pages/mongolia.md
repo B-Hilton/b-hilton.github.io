@@ -2,29 +2,12 @@
 layout: page
 permalink: /mongolia/
 title: Mongolia
-description: incomplete page; adventures, stories, pictures of a place I love
+description: From June 2022 to July 2024, I served as an English teacher and missionary for the Church of Jesus Christ of Latter-Day Saints. I struggle to find words to describe the joy and immense purpose and love I felt and still feel.
 nav: false
 nav_order: 9
 ---
 
 ## Pictures
-
-From June 2022 to July 2024, I served as an English teacher and missionary for the Church of Jesus Christ of Latter-Day Saints. I struggle to find words to describe the joy and immense purpose and love I felt and still feel from time to time.
-
-<div class="row">
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/kherlen_gol.jpg" title="Kherlen Gol" class="img-fluid rounded z-depth-1" %}
-    </div>
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/shine_jiliin_nar.jpeg" title="Tsagaan Sar" class="img-fluid rounded z-depth-1" %}
-    </div>
-    <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/flooded_field.jpg" title="Kerlengiin ereg deer" class="img-fluid rounded z-depth-1" %}
-    </div>
-</div>
-<div class="caption">
-    text
-</div>
 
 <div class="row justify-content-sm-center">
     <div class="col-sm-4 mt-3 mt-md-0">
@@ -43,11 +26,29 @@ From June 2022 to July 2024, I served as an English teacher and missionary for t
         {% include figure.liquid path="assets/img/mongolia_img/summer_horoolol.jpeg" title="probably near altan owoo" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/mongolia_img/buuz_time.jpg" title="making yummy meat dumplings" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/mongolia_img/shine_jiliin_nar.jpeg" title="Tsagaan Sar" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
     text
+</div>
+
+<div class="row">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/kherlen_gol.jpg" title="Kherlen Gol" class="img-fluid rounded z-depth-1" %}
+        Looking east on the Kherlen river.
+    </div>
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/flooded_field.jpg" title="Kerlengiin ereg deer" class="img-fluid rounded z-depth-1" %}
+        The rising sun of a new year.
+    </div>
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/mongolia_img/buuz_time.jpg" title="making yummy meat dumplings" class="img-fluid rounded z-depth-1" %}
+        A flooded park.
+    </div>
+</div>
+<div class="caption">
+    Scenes from Dornod.
 </div>
 
 <div class="row">

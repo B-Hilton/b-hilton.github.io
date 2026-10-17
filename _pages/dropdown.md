@@ -8,6 +8,6 @@ children:
   - title: Mongolia
     permalink: /mongolia/
   - title: divider
-  - title: blog
-    permalink: /blog/
+  - title: resources
+    permalink: /resources/
 ---
