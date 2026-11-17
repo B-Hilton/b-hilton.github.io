@@ -2,7 +2,7 @@
 layout: page
 title: American Nuclear Society
 description: Building Simulations and Demos for the BYU student chapter
-img: assets/img/past_projects/ANS_page_logo.png
+img: assets/img/past_projects/ANS_page_logo.jpg
 importance: 2
 category: STEM
 ---

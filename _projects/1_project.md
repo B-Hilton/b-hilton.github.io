@@ -14,7 +14,7 @@ This page describes some of the work I did for the BYU Physics department as a v
         {% include figure.liquid loading="eager" path="assets/img/past_projects/z_pinch_slo_mo.gif" title="flourescence" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/past_projects/z_plasma.png" title="plasma" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid loading="eager" path="assets/img/past_projects/z_plasma.jpg" title="plasma" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm mt-3 mt-md-0">
         {% include figure.liquid loading="eager" path="assets/img/past_projects/z_pinch_principle.gif" title="principle" class="img-fluid rounded z-depth-1" %}
@@ -26,7 +26,7 @@ This page describes some of the work I did for the BYU Physics department as a v
 
 <div class="row justify-content-sm-center">
     <div class="col-sm-4 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/past_projects/paschen_plasma.png" title="plasma device testing" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/past_projects/paschen_plasma.jpg" title="plasma device testing" class="img-fluid rounded z-depth-1" %}
     </div>
     <div class="col-sm-8 mt-3 mt-md-0">
         {% include figure.liquid path="assets/img/past_projects/pump_repair.jpeg" title="rotary vane problems" class="img-fluid rounded z-depth-1" %}

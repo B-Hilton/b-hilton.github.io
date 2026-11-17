@@ -15,7 +15,7 @@ nav_order: 9
         A young man considering his future career.
     </div>
     <div class="col-sm-8 mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/mongolia_img/english_class.png" title="English class in Choibalsan" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/mongolia_img/english_class.jpg" title="English class in Choibalsan" class="img-fluid rounded z-depth-1" %}
         Teaching English class.
     </div>
 </div>
