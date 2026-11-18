@@ -33,7 +33,7 @@
 
 **Code Quality Tools:**
 
-- **Prettier:** v3.8.0+ with `@shopify/prettier-plugin-liquid` – Code formatter (mandatory for PRs)
+- **Prettier:** v3.8.0+ with `@shopify/prettier-plugin-liquid` – Optional code formatter; its workflow can be run manually
 - **Purgecss:** CSS purification for production builds
 
 ## Building & Local Development
@@ -129,29 +129,20 @@ When making changes:
   - Runs purgecss for CSS optimization
   - Commits built site to gh-pages branch
   - **Triggers on:** Changes to site files, assets, config (NOT documentation files alone)
-- **prettier.yml** – Code formatting validation (mandatory)
-  - Runs prettier on all files
-  - **Fails PRs if code is not properly formatted**
-  - Generates HTML diff artifact on failure
-  - Must install prettier locally to avoid failures: `npm install prettier @shopify/prettier-plugin-liquid`
+- **prettier.yml** – Optional, manually triggered code formatting check
+  - Runs Prettier on all files only when manually dispatched
+  - Does not run on pushes or pull requests
 - **broken-links.yml, broken-links-site.yml** – Link validation
 - **axe.yml** – Accessibility testing
 - **codeql.yml** – Security scanning
 - **update-citations.yml** – Automatic citation updates
 - **render-cv.yml** – CV rendering from RenderCV format
 
-### Pre-commit Requirements
+### Pre-push Recommendations
 
-**You must run these locally before pushing:**
+Prettier is optional and does not block pushes or pull requests. If you choose to format files, limit formatting to the files you changed.
 
-1. **Prettier formatting (mandatory):**
-
-```bash
-npm install --save-dev prettier @shopify/prettier-plugin-liquid
-npx prettier . --write
-```
-
-2. **Local build test with Jekyll:**
+1. **Local build test with Jekyll:**
 
 ```bash
 docker compose pull && docker compose up
@@ -160,7 +151,7 @@ docker compose pull && docker compose up
 # Exit with Ctrl+C
 ```
 
-3. **Or run full build simulation:**
+2. **Or run full build simulation:**
 
 ```bash
 docker compose up --build

@@ -34,13 +34,7 @@ docker compose down
 
 Before every commit, you **must** run these steps:
 
-1.  **Format Code:**
-    ```bash
-    # (First time only)
-    npm install --save-dev prettier @shopify/prettier-plugin-liquid
-    # Format all files
-    npx prettier . --write
-    ```
+1.  **Review formatting:** The Prettier workflow is manual-only. If formatting is useful, run Prettier on the files you changed rather than the whole repository.
 2.  **Build Locally & Verify:**
 
     ```bash
