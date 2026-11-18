@@ -436,6 +436,11 @@ ninja.data = [{
           description: "A collection of smaller STEM projects and experiences",
           section: "Projects",handler: () => {
               window.location.href = "/projects/5_project/";
+            },},{id: "projects-webgl-reactor",
+          title: 'WebGL Reactor',
+          description: "A browser-based 2D reactor simulation.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/webgl-reactor/";
             },},{
         id: 'social-cv',
         title: 'CV',
