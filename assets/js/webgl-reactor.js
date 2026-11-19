@@ -15,8 +15,10 @@
   const MAX_GRID_SIZE = 256;
   const MAX_STEPS_PER_FRAME = 64;
   const MAX_NEUTRONS = 4095;
-  const NEUTRON_SPAWN_RATE = 20;
-  const NEUTRON_POWER_WATTS = 0.01;
+  const DEFAULT_NEUTRON_SPAWN_RATE = 20;
+  const MIN_NEUTRON_SPAWN_RATE = 0;
+  const MAX_NEUTRON_SPAWN_RATE = 1000;
+  const NEUTRON_POWER_WATTS = 1;
   const NEUTRON_MIN_SPEED = 0.003;
   const NEUTRON_MAX_SPEED = 0.012;
   const neutronPositions = new Float32Array(MAX_NEUTRONS * 2);
@@ -29,6 +31,7 @@
   const applyGridButton = document.getElementById("webgl-reactor-apply-grid");
   const gridInfo = document.getElementById("webgl-reactor-grid-info");
   const neutronInfo = document.getElementById("webgl-reactor-neutron-info");
+  const neutronRateInput = document.getElementById("webgl-reactor-neutron-rate");
   if (
     !canvas ||
     !toggleButton ||
@@ -36,7 +39,8 @@
     !gridInput ||
     !applyGridButton ||
     !gridInfo ||
-    !neutronInfo
+    !neutronInfo ||
+    !neutronRateInput
   ) {
     return;
   }
@@ -258,6 +262,7 @@ void main() {
   let targets = [];
   let neutronCount = 0;
   let spawnRemainder = 0;
+  let neutronSpawnRate = DEFAULT_NEUTRON_SPAWN_RATE;
   let showNeutrons = false;
   let neutronHeatScale = 0;
   let randomState = ((Math.random() * 0xffffffff) ^ Date.now()) >>> 0;
@@ -553,7 +558,7 @@ void main() {
       i += 1;
     }
 
-    spawnRemainder += elapsed * NEUTRON_SPAWN_RATE;
+    spawnRemainder += elapsed * neutronSpawnRate;
     const spawnsDue = Math.floor(spawnRemainder);
     spawnRemainder -= spawnsDue;
 
@@ -671,6 +676,21 @@ void main() {
     updateGridInfo();
     render();
   }
+
+  neutronRateInput.addEventListener("input", () => {
+    const requestedRate = Number(neutronRateInput.value);
+    if (
+      !Number.isInteger(requestedRate) ||
+      requestedRate < MIN_NEUTRON_SPAWN_RATE ||
+      requestedRate > MAX_NEUTRON_SPAWN_RATE
+    ) {
+      neutronRateInput.setAttribute("aria-invalid", "true");
+      return;
+    }
+
+    neutronRateInput.removeAttribute("aria-invalid");
+    neutronSpawnRate = requestedRate;
+  });
 
   toggleButton.addEventListener("click", () => setPlaying(!playing));
   applyGridButton.addEventListener("click", applyGridSize);

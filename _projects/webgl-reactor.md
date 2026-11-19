@@ -34,6 +34,17 @@ category: STEM
       inputmode="numeric"
       style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
     >
+    <label for="webgl-reactor-neutron-rate"><strong>Neutrons per second</strong></label>
+    <input
+      id="webgl-reactor-neutron-rate"
+      type="number"
+      min="0"
+      max="1000"
+      step="1"
+      value="20"
+      inputmode="numeric"
+      style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
+    >
     <button type="button" id="webgl-reactor-apply-grid">Apply grid size</button>
     <p id="webgl-reactor-grid-info" style="margin-top: 0.75rem;">
       100 × 100 cells · 1 mm per cell
@@ -51,9 +62,10 @@ category: STEM
   The plate stays 100 mm × 100 mm and 1 mm thick; changing resolution changes
   cell size, not plate size. The heater remains 3 mm × 3 mm. The outermost
   cells stay at 300 K. Applying a new grid size resets the plate to 300 K and
-  pauses the simulation. Neutrons spawn randomly at 20/s with speeds of
-  3–12 mm/s, disappear at the edges, and each adds 0.01 W to its current cell.
-  Press N to toggle their display (maximum 4,095). Colors span 300–380 K; red
+  pauses the simulation. Set the neutron spawn rate with the input above.
+  Neutrons spawn randomly with speeds of 3–12 mm/s, disappear at the edges,
+  and each adds 1 W to its current grid cell. Press N to toggle their display
+  (maximum 4,095). Colors span 300–380 K; red
   means 380 K or higher.
 </p>
 
