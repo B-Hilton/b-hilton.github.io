@@ -5,7 +5,7 @@
   const PLATE_THICKNESS = 0.001;
   const HEATER_SIZE = 0.003;
   const HEATER_HALF_SIZE = HEATER_SIZE / 2;
-  const POWER_WATTS = 10;
+  const POWER_WATTS = 1000;
   const DENSITY = 7870;
   const SPECIFIC_HEAT = 456;
   const CONDUCTIVITY = 80.2;
@@ -19,9 +19,9 @@
   const DEFAULT_NEUTRON_SPAWN_RATE = 20;
   const MIN_NEUTRON_SPAWN_RATE = 0;
   const MAX_NEUTRON_SPAWN_RATE = 1000;
-  const NEUTRON_POWER_WATTS = 1;
-  const NEUTRON_MIN_SPEED = 0.003;
-  const NEUTRON_MAX_SPEED = 0.012;
+  const NEUTRON_POWER_WATTS = 50;
+  const NEUTRON_MIN_SPEED = 0.05;
+  const NEUTRON_MAX_SPEED = 0.5;
   const neutronPositions = new Float32Array(MAX_NEUTRONS * 2);
   const neutronVelocities = new Float32Array(MAX_NEUTRONS * 2);
 
