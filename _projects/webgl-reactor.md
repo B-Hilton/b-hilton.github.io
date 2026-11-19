@@ -24,20 +24,8 @@ category: STEM
   ></canvas>
 
   <aside id="webgl-reactor-drawing-controls" style="flex: 0 1 220px; min-width: 180px;">
-    <label for="webgl-reactor-grid-size"><strong>Cells per side</strong></label>
-    <input
-      id="webgl-reactor-grid-size"
-      type="number"
-      min="16"
-      max="512"
-      step="1"
-      value="100"
-      inputmode="numeric"
-      style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
-    >
-    <button type="button" id="webgl-reactor-apply-grid">Apply grid size</button>
     <p id="webgl-reactor-grid-info" style="margin-top: 0.75rem;">
-      100 × 100 cells · 100 mm per cell
+      256 × 256 cells · 39.063 mm per cell
     </p>
 
     <label for="webgl-reactor-material"><strong>Material</strong></label>

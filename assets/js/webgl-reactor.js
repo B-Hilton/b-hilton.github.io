@@ -20,8 +20,6 @@
   );
   const DIFFUSION_NUMBER = 0.20;
   const MAX_HEAT_STEP_SECONDS = 1 / 60;
-  const MIN_GRID_SIZE = 16;
-  const MAX_GRID_SIZE = 512;
   const MAX_STEPS_PER_FRAME = 64;
   const MAX_NEUTRONS = 4095;
   const DEFAULT_NEUTRON_SPAWN_RATE = 20;
@@ -36,8 +34,6 @@
   const canvas = document.getElementById("webgl-reactor-canvas");
   const toggleButton = document.getElementById("webgl-reactor-toggle");
   const status = document.getElementById("webgl-reactor-status");
-  const gridInput = document.getElementById("webgl-reactor-grid-size");
-  const applyGridButton = document.getElementById("webgl-reactor-apply-grid");
   const gridInfo = document.getElementById("webgl-reactor-grid-info");
   const neutronInfo = document.getElementById("webgl-reactor-neutron-info");
   const neutronRateInput = document.getElementById("webgl-reactor-neutron-rate");
@@ -55,8 +51,6 @@
     !canvas ||
     !toggleButton ||
     !status ||
-    !gridInput ||
-    !applyGridButton ||
     !gridInfo ||
     !neutronInfo ||
     !neutronRateInput ||
@@ -85,11 +79,9 @@
   if (!gl) {
     engineStatus.textContent = "WebGL 2 is unavailable in this browser; the reactor simulation cannot start.";
     toggleButton.disabled = true;
-    applyGridButton.disabled = true;
     simulateButton.disabled = true;
     resetButton.disabled = true;
     editButton.disabled = true;
-    gridInput.disabled = true;
     neutronRateInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
@@ -100,11 +92,9 @@
     engineStatus.textContent =
       "This browser does not support the floating-point render target required for the heat grid.";
     toggleButton.disabled = true;
-    applyGridButton.disabled = true;
     simulateButton.disabled = true;
     resetButton.disabled = true;
     editButton.disabled = true;
-    gridInput.disabled = true;
     neutronRateInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
@@ -120,6 +110,7 @@ void main() {
   const heatSource = `#version 300 es
 precision highp float;
 precision highp int;
+precision highp usampler2D;
 
 uniform sampler2D u_previous;
 uniform sampler2D u_neutronPower;
@@ -215,6 +206,7 @@ void main() {
   const displaySource = `#version 300 es
 precision highp float;
 precision highp int;
+precision highp usampler2D;
 
 uniform sampler2D u_temperature;
 uniform usampler2D u_materials;
@@ -275,19 +267,13 @@ void main() {
     }
   }
 
-  vec2 cellPixels = u_canvasSize / float(u_gridSize);
-  vec2 withinCellPixels = fract(gl_FragCoord.xy / cellPixels) * cellPixels;
-  vec2 distanceToCellEdge = min(withinCellPixels, cellPixels - withinCellPixels);
-  if (min(distanceToCellEdge.x, distanceToCellEdge.y) < 0.60) {
-    displayColor *= 0.62;
-  }
-
   color = vec4(displayColor, 1.0);
 }`;
 
   const averageSource = `#version 300 es
 precision highp float;
 precision highp int;
+precision highp usampler2D;
 
 uniform sampler2D u_source;
 uniform usampler2D u_materials;
@@ -392,7 +378,7 @@ void main() {
   let powerToTemperatureScale = 0;
   let randomState = ((Math.random() * 0xffffffff) ^ Date.now()) >>> 0;
   if (randomState === 0) randomState = 1;
-  let gridSize = 100;
+  let gridSize = 256;
   let cellEdge = PLATE_SIZE / gridSize;
   materialIds = new Uint8Array(gridSize * gridSize);
   let stepSeconds = 0;
@@ -609,11 +595,9 @@ void main() {
   } catch (error) {
     engineStatus.textContent = `WebGL setup failed: ${error.message}`;
     toggleButton.disabled = true;
-    applyGridButton.disabled = true;
     simulateButton.disabled = true;
     resetButton.disabled = true;
     editButton.disabled = true;
-    gridInput.disabled = true;
     neutronRateInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
@@ -905,80 +889,6 @@ void main() {
     if (playing) scheduleFrame();
   }
 
-  function resampleMaterialIds(previousIds, previousSize, nextSize) {
-    const nextIds = new Uint8Array(nextSize * nextSize);
-    for (let y = 0; y < nextSize; y++) {
-      const sourceY = Math.min(
-        previousSize - 1,
-        Math.floor((y / nextSize) * previousSize)
-      );
-      for (let x = 0; x < nextSize; x++) {
-        const sourceX = Math.min(
-          previousSize - 1,
-          Math.floor((x / nextSize) * previousSize)
-        );
-        nextIds[y * nextSize + x] = previousIds[sourceY * previousSize + sourceX];
-      }
-    }
-    return nextIds;
-  }
-
-  function applyGridSize() {
-    const requestedSize = Number(gridInput.value);
-
-    if (
-      phase !== "drawing" ||
-      !Number.isInteger(requestedSize) ||
-      requestedSize < MIN_GRID_SIZE ||
-      requestedSize > MAX_GRID_SIZE
-    ) {
-      gridInput.setAttribute("aria-invalid", "true");
-      return;
-    }
-
-    gridInput.removeAttribute("aria-invalid");
-    if (requestedSize === gridSize) return;
-
-    const nextMaterials = resampleMaterialIds(materialIds, gridSize, requestedSize);
-    let nextTargets;
-    let nextNeutronHeatTexture;
-    let nextMaterialTexture;
-    let nextAverageTargets;
-    try {
-      nextTargets = createTargets(requestedSize);
-      nextNeutronHeatTexture = createNeutronHeatTexture(requestedSize);
-      nextMaterialTexture = createMaterialTexture(requestedSize, nextMaterials);
-      nextAverageTargets = createAverageTargets(requestedSize);
-    } catch (error) {
-      if (nextTargets) disposeTargets(nextTargets);
-      if (nextNeutronHeatTexture) gl.deleteTexture(nextNeutronHeatTexture);
-      if (nextMaterialTexture) gl.deleteTexture(nextMaterialTexture);
-      if (nextAverageTargets) disposeAverageTargets(nextAverageTargets);
-      status.textContent = `Could not create that grid: ${error.message}`;
-      return;
-    }
-
-    disposeTargets(targets);
-    disposeAverageTargets(averageTargets);
-    gl.deleteTexture(neutronHeatTexture);
-    gl.deleteTexture(materialTexture);
-    targets = nextTargets;
-    averageTargets = nextAverageTargets;
-    neutronHeatTexture = nextNeutronHeatTexture;
-    materialTexture = nextMaterialTexture;
-    materialIds = nextMaterials;
-    neutronHeatField = new Float32Array(requestedSize * requestedSize);
-    neutronCount = 0;
-    spawnRemainder = 0;
-    currentTarget = 0;
-    simulationTime = 0;
-    accumulator = 0;
-    updateGridPhysics(requestedSize);
-    updateHeaterGeometry();
-    updateGridInfo();
-    render();
-  }
-
   function setBrushSize(value) {
     brushSize = Number(value);
     brushValue.textContent = `${brushSize} × ${brushSize}`;
@@ -1124,13 +1034,6 @@ void main() {
   resetButton.addEventListener("click", () => resetSimulation(true));
   editButton.addEventListener("click", editDrawing);
   toggleButton.addEventListener("click", () => setPlaying(!playing));
-  applyGridButton.addEventListener("click", applyGridSize);
-
-  gridInput.addEventListener("change", applyGridSize);
-  gridInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") applyGridSize();
-  });
-
   document.addEventListener("keydown", (event) => {
     if (phase !== "simulating" || event.repeat || event.isComposing) return;
 
