@@ -18,7 +18,7 @@ category: STEM
     width="600"
     height="600"
     role="img"
-    aria-label="Heat map of a pure-iron plate. Move the cursor here to heat a 3 millimeter square spot."
+    aria-label="Heat map of a 10 meter square pure-iron plate. Move the cursor here to heat a 3 millimeter square spot."
     style="display: block; flex: 1 1 440px; min-width: 0; width: 100%; max-width: 600px; height: auto; aspect-ratio: 1; border: 1px solid #64748b; box-sizing: border-box; touch-action: none;"
   ></canvas>
 
@@ -27,8 +27,8 @@ category: STEM
     <input
       id="webgl-reactor-grid-size"
       type="number"
-      min="3"
-      max="256"
+      min="16"
+      max="512"
       step="1"
       value="100"
       inputmode="numeric"
@@ -47,7 +47,7 @@ category: STEM
     >
     <button type="button" id="webgl-reactor-apply-grid">Apply grid size</button>
     <p id="webgl-reactor-grid-info" style="margin-top: 0.75rem;">
-      100 × 100 cells · 1 mm per cell
+      100 × 100 cells · 100 mm per cell
     </p>
     <button type="button" id="webgl-reactor-toggle" aria-pressed="false">Play</button>
     <p id="webgl-reactor-status" role="status" aria-live="polite">Paused · 0.00 s</p>
@@ -59,14 +59,15 @@ category: STEM
 </p>
 
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
-  The plate stays 100 mm × 100 mm and 1 mm thick; changing resolution changes
-  cell size, not plate size. The heater remains 3 mm × 3 mm. The outermost
-  cells stay at 300 K. Applying a new grid size resets the plate to 300 K and
-  pauses the simulation. Set the neutron spawn rate with the input above.
-  Neutrons spawn randomly with speeds of 3–12 mm/s, disappear at the edges,
-  and each adds 1 W to its current grid cell. Press N to toggle their display
-  (maximum 4,095). Colors span 300–380 K; red
-  means 380 K or higher.
+  The plate stays 10 m × 10 m and 1 mm thick; changing resolution changes
+  cell size, not plate size. Choose between 16 × 16 and 512 × 512 cells. The
+  heater remains 3 mm × 3 mm. Each edge cell exchanges heat with the 300 K
+  surroundings at a rate of 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W per cell.
+  Applying a new grid size resets the plate to 300 K and pauses the simulation.
+  Set the neutron spawn rate with the input above. Neutrons spawn randomly
+  with speeds of 3–12 mm/s, disappear at the edges, and each adds 1 W to its
+  current grid cell. Press N to toggle their display (maximum 4,095). Colors
+  span 300–380 K; red means 380 K or higher.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>

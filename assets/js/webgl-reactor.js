@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const PLATE_SIZE = 0.1;
+  const PLATE_SIZE = 10;
   const PLATE_THICKNESS = 0.001;
   const HEATER_SIZE = 0.003;
   const HEATER_HALF_SIZE = HEATER_SIZE / 2;
@@ -11,8 +11,8 @@
   const CONDUCTIVITY = 80.2;
   const DIFFUSIVITY = CONDUCTIVITY / (DENSITY * SPECIFIC_HEAT);
   const DIFFUSION_NUMBER = 0.20;
-  const MIN_GRID_SIZE = 3;
-  const MAX_GRID_SIZE = 256;
+  const MIN_GRID_SIZE = 16;
+  const MAX_GRID_SIZE = 512;
   const MAX_STEPS_PER_FRAME = 64;
   const MAX_NEUTRONS = 4095;
   const DEFAULT_NEUTRON_SPAWN_RATE = 20;
@@ -84,7 +84,7 @@ uniform int u_gridSize;
 uniform float u_cellEdge;
 uniform float u_diffusionStep;
 uniform float u_heatingScale;
-uniform float u_neutronHeatingScale;
+uniform float u_powerToTemperatureScale;
 uniform float u_heaterArea;
 uniform vec2 u_heaterCenter;
 uniform int u_heaterEnabled;
@@ -94,20 +94,17 @@ layout(location = 0) out float nextTemperature;
 void main() {
   ivec2 cell = ivec2(gl_FragCoord.xy);
 
-  if (
-    cell.x == 0 || cell.y == 0 ||
-    cell.x == u_gridSize - 1 || cell.y == u_gridSize - 1
-  ) {
-    nextTemperature = 300.0;
-    return;
-  }
-
+  ivec2 lastCell = ivec2(u_gridSize - 1);
+  ivec2 leftCell = max(cell + ivec2(-1, 0), ivec2(0));
+  ivec2 rightCell = min(cell + ivec2(1, 0), lastCell);
+  ivec2 lowerCell = max(cell + ivec2(0, -1), ivec2(0));
+  ivec2 upperCell = min(cell + ivec2(0, 1), lastCell);
   float center = texelFetch(u_previous, cell, 0).r;
   float neighbors =
-    texelFetch(u_previous, cell + ivec2(-1, 0), 0).r +
-    texelFetch(u_previous, cell + ivec2( 1, 0), 0).r +
-    texelFetch(u_previous, cell + ivec2( 0,-1), 0).r +
-    texelFetch(u_previous, cell + ivec2( 0, 1), 0).r;
+    texelFetch(u_previous, leftCell, 0).r +
+    texelFetch(u_previous, rightCell, 0).r +
+    texelFetch(u_previous, lowerCell, 0).r +
+    texelFetch(u_previous, upperCell, 0).r;
 
   float temperature = center + u_diffusionStep * (neighbors - 4.0 * center);
 
@@ -125,7 +122,16 @@ void main() {
   }
 
   float neutronPower = texelFetch(u_neutronPower, cell, 0).r;
-  temperature += neutronPower * u_neutronHeatingScale;
+  temperature += neutronPower * u_powerToTemperatureScale;
+
+  bool isEdge =
+    cell.x == 0 || cell.y == 0 ||
+    cell.x == u_gridSize - 1 || cell.y == u_gridSize - 1;
+  if (isEdge) {
+    float edgeHeatLossWatts =
+      1.23e-11 * (pow(center, 4.0) - 8.1e9);
+    temperature -= edgeHeatLossWatts * u_powerToTemperatureScale;
+  }
 
   nextTemperature = temperature;
 }`;
@@ -419,7 +425,7 @@ void main() {
   const heatUniforms = {
     previous: gl.getUniformLocation(heatProgram, "u_previous"),
     neutronPower: gl.getUniformLocation(heatProgram, "u_neutronPower"),
-    neutronHeatingScale: gl.getUniformLocation(heatProgram, "u_neutronHeatingScale"),
+    powerToTemperatureScale: gl.getUniformLocation(heatProgram, "u_powerToTemperatureScale"),
     gridSize: gl.getUniformLocation(heatProgram, "u_gridSize"),
     cellEdge: gl.getUniformLocation(heatProgram, "u_cellEdge"),
     diffusionStep: gl.getUniformLocation(heatProgram, "u_diffusionStep"),
@@ -470,7 +476,7 @@ void main() {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, neutronHeatTexture);
     gl.uniform1i(heatUniforms.neutronPower, 1);
-    gl.uniform1f(heatUniforms.neutronHeatingScale, neutronHeatScale);
+    gl.uniform1f(heatUniforms.powerToTemperatureScale, neutronHeatScale);
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform1i(heatUniforms.gridSize, gridSize);
     gl.uniform1f(heatUniforms.cellEdge, cellEdge);
