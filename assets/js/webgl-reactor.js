@@ -11,6 +11,7 @@
   const CONDUCTIVITY = 80.2;
   const DIFFUSIVITY = CONDUCTIVITY / (DENSITY * SPECIFIC_HEAT);
   const DIFFUSION_NUMBER = 0.20;
+  const MAX_HEAT_STEP_SECONDS = 1 / 60;
   const MIN_GRID_SIZE = 16;
   const MAX_GRID_SIZE = 512;
   const MAX_STEPS_PER_FRAME = 64;
@@ -293,8 +294,10 @@ void main() {
   function updateGridPhysics(size) {
     gridSize = size;
     cellEdge = PLATE_SIZE / gridSize;
-    stepSeconds =
-      DIFFUSION_NUMBER * cellEdge * cellEdge / DIFFUSIVITY;
+    stepSeconds = Math.min(
+      DIFFUSION_NUMBER * cellEdge * cellEdge / DIFFUSIVITY,
+      MAX_HEAT_STEP_SECONDS
+    );
     diffusionStep =
       DIFFUSIVITY * stepSeconds / (cellEdge * cellEdge);
     const cellVolume = cellEdge * cellEdge * PLATE_THICKNESS;
