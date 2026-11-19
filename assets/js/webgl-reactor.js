@@ -1157,11 +1157,19 @@ void main() {
       pointerPainting = true;
       lastPaintCellX = null;
       lastPaintCellY = null;
-      canvas.setPointerCapture(event.pointerId);
       paintAt(event);
+      try {
+        canvas.setPointerCapture(event.pointerId);
+      } catch {
+        // Painting still works when pointer capture is unavailable.
+      }
     } else {
       updateHeaterFromPointer(event);
     }
+  });
+
+  canvas.addEventListener("click", (event) => {
+    if (phase === "drawing") paintAt(event);
   });
 
   canvas.addEventListener("pointermove", (event) => {
