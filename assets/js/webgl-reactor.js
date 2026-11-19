@@ -19,8 +19,9 @@
     )
   );
   const DIFFUSION_NUMBER = 0.20;
-  const MAX_HEAT_STEP_SECONDS = 1 / 60;
-  const MAX_STEPS_PER_FRAME = 64;
+  const MAX_HEAT_STEP_SECONDS = 1 / 30;
+  const SIMULATION_SPEED = 12;
+  const MAX_STEPS_PER_FRAME = 6;
   const MAX_NEUTRONS = 4095;
   const DEFAULT_NEUTRON_SPAWN_RATE = 20;
   const MIN_NEUTRON_SPAWN_RATE = 0;
@@ -378,7 +379,7 @@ void main() {
   let powerToTemperatureScale = 0;
   let randomState = ((Math.random() * 0xffffffff) ^ Date.now()) >>> 0;
   if (randomState === 0) randomState = 1;
-  let gridSize = 256;
+  let gridSize = 200;
   let cellEdge = PLATE_SIZE / gridSize;
   materialIds = new Uint8Array(gridSize * gridSize);
   let stepSeconds = 0;
@@ -846,9 +847,16 @@ void main() {
       if (lastTimestamp === null) lastTimestamp = timestamp;
       const elapsed = Math.min(timestamp - lastTimestamp, 100) / 1000;
       lastTimestamp = timestamp;
-      updateNeutrons(elapsed);
-      accumulator += elapsed;
-      averageUpdateElapsed += elapsed;
+      const simulationElapsed = Math.min(
+        elapsed * SIMULATION_SPEED,
+        stepSeconds * MAX_STEPS_PER_FRAME
+      );
+      updateNeutrons(simulationElapsed);
+      accumulator = Math.min(
+        accumulator + simulationElapsed,
+        stepSeconds * MAX_STEPS_PER_FRAME
+      );
+      averageUpdateElapsed += simulationElapsed;
 
       let steps = 0;
       while (

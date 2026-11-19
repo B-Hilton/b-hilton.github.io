@@ -25,7 +25,7 @@ category: STEM
 
   <aside id="webgl-reactor-drawing-controls" style="flex: 0 1 220px; min-width: 180px;">
     <p id="webgl-reactor-grid-info" style="margin-top: 0.75rem;">
-      256 × 256 cells · 39.063 mm per cell
+      200 × 200 cells · 50.000 mm per cell
     </p>
 
     <label for="webgl-reactor-material"><strong>Material</strong></label>
