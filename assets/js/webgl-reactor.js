@@ -50,6 +50,7 @@
   const resetButton = document.getElementById("webgl-reactor-reset");
   const editButton = document.getElementById("webgl-reactor-edit");
   const averageTemperature = document.getElementById("webgl-reactor-average");
+  const engineStatus = document.getElementById("webgl-reactor-engine-status");
   if (
     !canvas ||
     !toggleButton ||
@@ -67,7 +68,8 @@
     !simulateButton ||
     !resetButton ||
     !editButton ||
-    !averageTemperature
+    !averageTemperature ||
+    !engineStatus
   ) {
     return;
   }
@@ -81,17 +83,31 @@
   });
 
   if (!gl) {
-    status.textContent = "WebGL 2 is unavailable in this browser.";
+    engineStatus.textContent = "WebGL 2 is unavailable in this browser; the reactor simulation cannot start.";
     toggleButton.disabled = true;
     applyGridButton.disabled = true;
+    simulateButton.disabled = true;
+    resetButton.disabled = true;
+    editButton.disabled = true;
+    gridInput.disabled = true;
+    neutronRateInput.disabled = true;
+    materialInput.disabled = true;
+    brushInput.disabled = true;
     return;
   }
 
   if (!gl.getExtension("EXT_color_buffer_float")) {
-    status.textContent =
+    engineStatus.textContent =
       "This browser does not support the floating-point render target required for the heat grid.";
     toggleButton.disabled = true;
     applyGridButton.disabled = true;
+    simulateButton.disabled = true;
+    resetButton.disabled = true;
+    editButton.disabled = true;
+    gridInput.disabled = true;
+    neutronRateInput.disabled = true;
+    materialInput.disabled = true;
+    brushInput.disabled = true;
     return;
   }
 
@@ -591,9 +607,16 @@ void main() {
     gl.enableVertexAttribArray(positionLocation);
     gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
   } catch (error) {
-    status.textContent = `WebGL setup failed: ${error.message}`;
+    engineStatus.textContent = `WebGL setup failed: ${error.message}`;
     toggleButton.disabled = true;
     applyGridButton.disabled = true;
+    simulateButton.disabled = true;
+    resetButton.disabled = true;
+    editButton.disabled = true;
+    gridInput.disabled = true;
+    neutronRateInput.disabled = true;
+    materialInput.disabled = true;
+    brushInput.disabled = true;
     return;
   }
 

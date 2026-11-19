@@ -11,6 +11,7 @@ category: STEM
   Draw a material layout on the grid, then press <strong>Simulate</strong>.
   During simulation, move the cursor over the grid to apply the 1,000 W heater.
 </p>
+<p id="webgl-reactor-engine-status" role="status" aria-live="polite"></p>
 
 <div style="display: flex; align-items: flex-start; gap: 1.25rem; flex-wrap: wrap;">
   <canvas
@@ -86,8 +87,9 @@ category: STEM
   The plate is 10 m × 10 m and 1 mm thick. It starts as vacuum; paint concrete,
   steel, water, or air with a 1–50 cell square brush. The material grid stores
   IDs 0–4, and vacuum has no heat capacity or conduction. Heat moves between
-  neighboring cells according to their material conductivities. Water and air
-  are currently stationary, with no fluid motion. Edge cells continue to
+  neighboring cells according to their material conductivities. Concrete and
+  steel are static materials; water and air are dynamic materials. For now,
+  all materials use the same stationary solver, with no fluid motion. Edge cells continue to
   exchange heat with 300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W
   per edge cell. The heater remains 3 mm × 3 mm and 1,000 W. Neutrons each add
   50 W to the material cell they occupy. Press Space to pause or play.
