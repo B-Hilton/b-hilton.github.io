@@ -1,40 +1,36 @@
 ---
 layout: page
 title: WebGL Reactor
-description: A browser-based 2D reactor simulation.
+description: A WebGL heat-transport benchmark on a 100 by 100 pure-iron grid.
 img: assets/img/no_image.png
 importance: 5
 category: STEM
 ---
 
-<p>Press <kbd>R</kbd> to change the box color.</p>
+<p>
+  Move the cursor over the grid to apply <strong>10 W total</strong> across a
+  3×3 spot. Press <kbd>Space</kbd> to play or pause.
+</p>
 
-<div
-  id="webgl-reactor-test-box"
+<canvas
+  id="webgl-reactor-canvas"
+  width="600"
+  height="600"
   role="img"
-  aria-label="Interactive test box. Press R to change its color."
-  aria-keyshortcuts="R"
-  data-active="false"
-  style="width: 100%; max-width: 720px; aspect-ratio: 16 / 9; min-height: 240px; margin: 1rem auto; border: 1px solid #6b7280; border-radius: 0.5rem; background-color: #202a36; transition: background-color 160ms ease;"
-></div>
+  aria-label="Heat map of a 100 by 100 iron grid. Move the cursor here to heat a 3 by 3 spot."
+  style="display: block; width: 100%; max-width: 600px; height: auto; aspect-ratio: 1; border: 1px solid #64748b; box-sizing: border-box; touch-action: none;"
+></canvas>
 
-<script>
-  document.addEventListener("keydown", (event) => {
-    if (
-      event.key.toLowerCase() !== "r" ||
-      event.repeat ||
-      event.altKey ||
-      event.ctrlKey ||
-      event.metaKey
-    ) {
-      return;
-    }
+<div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem;">
+  <button type="button" id="webgl-reactor-toggle" aria-pressed="false">Play</button>
+  <span id="webgl-reactor-status" role="status" aria-live="polite">Paused · 0.00 s</span>
+</div>
 
-    const box = document.getElementById("webgl-reactor-test-box");
-    if (!box) return;
+<p id="webgl-reactor-help" style="margin-top: 0.75rem;">
+  Grid: 100×100 cells, 1 mm per side. The model treats each cell as a 1 mm-thick
+  slice, uses constant near-room-temperature pure-iron properties, and holds
+  the outermost cells at 300 K. Colors span 300–380 K; red means 380 K or
+  higher.
+</p>
 
-    const active = box.dataset.active !== "true";
-    box.dataset.active = String(active);
-    box.style.backgroundColor = active ? "#168aad" : "#202a36";
-  });
-</script>
+<script src="{{ '/assets/js/webgl-reactor.js' | relative_url }}" defer></script>
