@@ -438,7 +438,7 @@ ninja.data = [{
               window.location.href = "/projects/5_project/";
             },},{id: "projects-webgl-reactor",
           title: 'WebGL Reactor',
-          description: "A WebGL heat-transport benchmark on a 100 by 100 pure-iron grid.",
+          description: "A WebGL heat-transport benchmark on a pure-iron grid.",
           section: "Projects",handler: () => {
               window.location.href = "/projects/webgl-reactor/";
             },},{
