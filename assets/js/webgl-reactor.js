@@ -1,23 +1,36 @@
 (() => {
   "use strict";
 
-  const SIZE = 100;
-  const CELL_EDGE = 1e-3;
-  const CELL_VOLUME = CELL_EDGE ** 3;
+  const PLATE_SIZE = 0.1;
+  const PLATE_THICKNESS = 0.001;
+  const HEATER_SIZE = 0.003;
+  const HEATER_HALF_SIZE = HEATER_SIZE / 2;
   const POWER_WATTS = 10;
   const DENSITY = 7870;
   const SPECIFIC_HEAT = 456;
   const CONDUCTIVITY = 80.2;
   const DIFFUSIVITY = CONDUCTIVITY / (DENSITY * SPECIFIC_HEAT);
-  const STEP_SECONDS = 0.005;
-  const DIFFUSION_STEP =
-    (DIFFUSIVITY * STEP_SECONDS) / (CELL_EDGE * CELL_EDGE);
-  const MAX_STEPS_PER_FRAME = 20;
+  const DIFFUSION_NUMBER = 0.20;
+  const MIN_GRID_SIZE = 3;
+  const MAX_GRID_SIZE = 256;
+  const MAX_STEPS_PER_FRAME = 64;
 
   const canvas = document.getElementById("webgl-reactor-canvas");
   const toggleButton = document.getElementById("webgl-reactor-toggle");
   const status = document.getElementById("webgl-reactor-status");
-  if (!canvas || !toggleButton || !status) return;
+  const gridInput = document.getElementById("webgl-reactor-grid-size");
+  const applyGridButton = document.getElementById("webgl-reactor-apply-grid");
+  const gridInfo = document.getElementById("webgl-reactor-grid-info");
+  if (
+    !canvas ||
+    !toggleButton ||
+    !status ||
+    !gridInput ||
+    !applyGridButton ||
+    !gridInfo
+  ) {
+    return;
+  }
 
   const gl = canvas.getContext("webgl2", {
     alpha: false,
@@ -30,6 +43,7 @@
   if (!gl) {
     status.textContent = "WebGL 2 is unavailable in this browser.";
     toggleButton.disabled = true;
+    applyGridButton.disabled = true;
     return;
   }
 
@@ -37,6 +51,7 @@
     status.textContent =
       "This browser does not support the floating-point render target required for the heat grid.";
     toggleButton.disabled = true;
+    applyGridButton.disabled = true;
     return;
   }
 
@@ -51,11 +66,13 @@ precision highp float;
 precision highp int;
 
 uniform sampler2D u_previous;
+uniform int u_gridSize;
+uniform float u_cellEdge;
 uniform float u_diffusionStep;
-uniform float u_stepSeconds;
-uniform float u_heatingRate;
+uniform float u_heatingScale;
+uniform float u_heaterArea;
+uniform vec2 u_heaterCenter;
 uniform int u_heaterEnabled;
-uniform ivec2 u_heaterCell;
 
 layout(location = 0) out float nextTemperature;
 
@@ -64,7 +81,7 @@ void main() {
 
   if (
     cell.x == 0 || cell.y == 0 ||
-    cell.x == 99 || cell.y == 99
+    cell.x == u_gridSize - 1 || cell.y == u_gridSize - 1
   ) {
     nextTemperature = 300.0;
     return;
@@ -79,13 +96,17 @@ void main() {
 
   float temperature = center + u_diffusionStep * (neighbors - 4.0 * center);
 
-  bool inHeater =
-    u_heaterEnabled == 1 &&
-    abs(cell.x - u_heaterCell.x) <= 1 &&
-    abs(cell.y - u_heaterCell.y) <= 1;
-
-  if (inHeater) {
-    temperature += u_heatingRate * u_stepSeconds;
+  if (u_heaterEnabled == 1 && u_heaterArea > 0.0) {
+    vec2 cellMin = vec2(cell) * u_cellEdge;
+    vec2 cellMax = cellMin + vec2(u_cellEdge);
+    vec2 spotMin = u_heaterCenter - vec2(0.0015);
+    vec2 spotMax = u_heaterCenter + vec2(0.0015);
+    vec2 overlap = max(
+      vec2(0.0),
+      min(cellMax, spotMax) - max(cellMin, spotMin)
+    );
+    float overlapArea = overlap.x * overlap.y;
+    temperature += u_heatingScale * overlapArea;
   }
 
   nextTemperature = temperature;
@@ -97,8 +118,11 @@ precision highp int;
 
 uniform sampler2D u_temperature;
 uniform vec2 u_canvasSize;
+uniform int u_gridSize;
+uniform float u_cellEdge;
+uniform float u_heaterArea;
+uniform vec2 u_heaterCenter;
 uniform int u_heaterEnabled;
-uniform ivec2 u_heaterCell;
 
 out vec4 color;
 
@@ -119,27 +143,26 @@ vec3 heatColor(float temperature) {
 
 void main() {
   ivec2 cell = ivec2(
-    floor(gl_FragCoord.xy / u_canvasSize * float(100))
+    floor(gl_FragCoord.xy / u_canvasSize * float(u_gridSize))
   );
-  cell = clamp(cell, ivec2(0), ivec2(99));
+  cell = clamp(cell, ivec2(0), ivec2(u_gridSize - 1));
 
   float temperature = texelFetch(u_temperature, cell, 0).r;
   vec3 displayColor = heatColor(temperature);
 
-  bool inHeater =
-    u_heaterEnabled == 1 &&
-    abs(cell.x - u_heaterCell.x) <= 1 &&
-    abs(cell.y - u_heaterCell.y) <= 1;
-
-  if (inHeater) {
-    bool edgeOfSpot =
-      abs(cell.x - u_heaterCell.x) == 1 ||
-      abs(cell.y - u_heaterCell.y) == 1;
-    displayColor = mix(
-      displayColor,
-      vec3(1.0, 0.78, 0.12),
-      edgeOfSpot ? 0.72 : 0.20
+  if (u_heaterEnabled == 1 && u_heaterArea > 0.0) {
+    vec2 cellMin = vec2(cell) * u_cellEdge;
+    vec2 cellMax = cellMin + vec2(u_cellEdge);
+    vec2 spotMin = u_heaterCenter - vec2(0.0015);
+    vec2 spotMax = u_heaterCenter + vec2(0.0015);
+    vec2 overlap = max(
+      vec2(0.0),
+      min(cellMax, spotMax) - max(cellMin, spotMin)
     );
+
+    if (overlap.x > 0.0 && overlap.y > 0.0) {
+      displayColor = mix(displayColor, vec3(1.0, 0.78, 0.12), 0.30);
+    }
   }
 
   color = vec4(displayColor, 1.0);
@@ -179,32 +202,6 @@ void main() {
     return program;
   }
 
-  let playing = false;
-  let simulationTime = 0;
-  let accumulator = 0;
-  let lastTimestamp = null;
-  let animationFrame = null;
-  let currentTarget = 0;
-  let heaterEnabled = false;
-  let heaterX = 50;
-  let heaterY = 50;
-  let heatingRate = 0;
-
-  function countHeatedInteriorCells() {
-    let count = 0;
-    for (let y = Math.max(1, heaterY - 1); y <= Math.min(98, heaterY + 1); y++) {
-      for (let x = Math.max(1, heaterX - 1); x <= Math.min(98, heaterX + 1); x++) {
-        count += 1;
-      }
-    }
-    return count;
-  }
-
-  function updateHeatingRate() {
-    const heatedCells = countHeatedInteriorCells();
-    heatingRate = POWER_WATTS / (heatedCells * DENSITY * SPECIFIC_HEAT * CELL_VOLUME);
-  }
-
   const vao = gl.createVertexArray();
   gl.bindVertexArray(vao);
   gl.disable(gl.BLEND);
@@ -212,86 +209,156 @@ void main() {
 
   let heatProgram;
   let displayProgram;
-  let targets;
+  let targets = [];
+  let gridSize = 100;
+  let cellEdge = PLATE_SIZE / gridSize;
+  let stepSeconds = 0;
+  let diffusionStep = 0;
+  let heatingScale = 0;
+
+  let playing = false;
+  let simulationTime = 0;
+  let accumulator = 0;
+  let lastTimestamp = null;
+  let animationFrame = null;
+  let currentTarget = 0;
+  let heaterEnabled = false;
+  let heaterX = PLATE_SIZE / 2;
+  let heaterY = PLATE_SIZE / 2;
+  let heaterArea = HEATER_SIZE * HEATER_SIZE;
+
+  function updateGridPhysics(size) {
+    gridSize = size;
+    cellEdge = PLATE_SIZE / gridSize;
+    stepSeconds =
+      DIFFUSION_NUMBER * cellEdge * cellEdge / DIFFUSIVITY;
+    diffusionStep =
+      DIFFUSIVITY * stepSeconds / (cellEdge * cellEdge);
+    updateHeaterGeometry();
+  }
+
+  function updateHeaterGeometry() {
+    const minX = Math.max(0, heaterX - HEATER_HALF_SIZE);
+    const maxX = Math.min(PLATE_SIZE, heaterX + HEATER_HALF_SIZE);
+    const minY = Math.max(0, heaterY - HEATER_HALF_SIZE);
+    const maxY = Math.min(PLATE_SIZE, heaterY + HEATER_HALF_SIZE);
+    heaterArea = Math.max(0, maxX - minX) * Math.max(0, maxY - minY);
+
+    if (heaterArea > 0) {
+      const cellVolume = cellEdge * cellEdge * PLATE_THICKNESS;
+      heatingScale =
+        POWER_WATTS * stepSeconds /
+        (DENSITY * SPECIFIC_HEAT * cellVolume * heaterArea);
+    } else {
+      heatingScale = 0;
+    }
+  }
+
+  function createTargets(size) {
+    const initialTemperatures = new Float32Array(size * size);
+    initialTemperatures.fill(300.0);
+    const created = [];
+
+    try {
+      for (let i = 0; i < 2; i++) {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(
+          gl.TEXTURE_2D,
+          0,
+          gl.R32F,
+          size,
+          size,
+          0,
+          gl.RED,
+          gl.FLOAT,
+          initialTemperatures
+        );
+
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER,
+          gl.COLOR_ATTACHMENT0,
+          gl.TEXTURE_2D,
+          texture,
+          0
+        );
+
+        const target = { texture, framebuffer };
+        created.push(target);
+
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+          throw new Error("Could not create the floating-point heat grid.");
+        }
+      }
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return created;
+    } catch (error) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      disposeTargets(created);
+      throw error;
+    }
+  }
+
+  function disposeTargets(items) {
+    for (const target of items) {
+      gl.deleteFramebuffer(target.framebuffer);
+      gl.deleteTexture(target.texture);
+    }
+  }
 
   try {
     heatProgram = createProgram(heatSource);
     displayProgram = createProgram(displaySource);
-
-    const initialTemperatures = new Float32Array(SIZE * SIZE);
-    initialTemperatures.fill(300.0);
-
-    targets = [0, 1].map(() => {
-      const texture = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.R32F,
-        SIZE,
-        SIZE,
-        0,
-        gl.RED,
-        gl.FLOAT,
-        initialTemperatures
-      );
-
-      const framebuffer = gl.createFramebuffer();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-      gl.framebufferTexture2D(
-        gl.FRAMEBUFFER,
-        gl.COLOR_ATTACHMENT0,
-        gl.TEXTURE_2D,
-        texture,
-        0
-      );
-
-      if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-        throw new Error("Could not create the floating-point heat grid.");
-      }
-
-      return { texture, framebuffer };
-    });
-
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    targets = createTargets(gridSize);
   } catch (error) {
     status.textContent = `WebGL setup failed: ${error.message}`;
     toggleButton.disabled = true;
+    applyGridButton.disabled = true;
     return;
   }
 
   const heatUniforms = {
     previous: gl.getUniformLocation(heatProgram, "u_previous"),
+    gridSize: gl.getUniformLocation(heatProgram, "u_gridSize"),
+    cellEdge: gl.getUniformLocation(heatProgram, "u_cellEdge"),
     diffusionStep: gl.getUniformLocation(heatProgram, "u_diffusionStep"),
-    stepSeconds: gl.getUniformLocation(heatProgram, "u_stepSeconds"),
-    heatingRate: gl.getUniformLocation(heatProgram, "u_heatingRate"),
+    heatingScale: gl.getUniformLocation(heatProgram, "u_heatingScale"),
+    heaterArea: gl.getUniformLocation(heatProgram, "u_heaterArea"),
+    heaterCenter: gl.getUniformLocation(heatProgram, "u_heaterCenter"),
     heaterEnabled: gl.getUniformLocation(heatProgram, "u_heaterEnabled"),
-    heaterCell: gl.getUniformLocation(heatProgram, "u_heaterCell"),
   };
 
   const displayUniforms = {
     temperature: gl.getUniformLocation(displayProgram, "u_temperature"),
     canvasSize: gl.getUniformLocation(displayProgram, "u_canvasSize"),
+    gridSize: gl.getUniformLocation(displayProgram, "u_gridSize"),
+    cellEdge: gl.getUniformLocation(displayProgram, "u_cellEdge"),
+    heaterArea: gl.getUniformLocation(displayProgram, "u_heaterArea"),
+    heaterCenter: gl.getUniformLocation(displayProgram, "u_heaterCenter"),
     heaterEnabled: gl.getUniformLocation(displayProgram, "u_heaterEnabled"),
-    heaterCell: gl.getUniformLocation(displayProgram, "u_heaterCell"),
   };
 
   function drawTemperature() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, targets[1 - currentTarget].framebuffer);
-    gl.viewport(0, 0, SIZE, SIZE);
+    gl.viewport(0, 0, gridSize, gridSize);
     gl.useProgram(heatProgram);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, targets[currentTarget].texture);
     gl.uniform1i(heatUniforms.previous, 0);
-    gl.uniform1f(heatUniforms.diffusionStep, DIFFUSION_STEP);
-    gl.uniform1f(heatUniforms.stepSeconds, STEP_SECONDS);
-    gl.uniform1f(heatUniforms.heatingRate, heatingRate);
+    gl.uniform1i(heatUniforms.gridSize, gridSize);
+    gl.uniform1f(heatUniforms.cellEdge, cellEdge);
+    gl.uniform1f(heatUniforms.diffusionStep, diffusionStep);
+    gl.uniform1f(heatUniforms.heatingScale, heatingScale);
+    gl.uniform1f(heatUniforms.heaterArea, heaterArea);
+    gl.uniform2f(heatUniforms.heaterCenter, heaterX, heaterY);
     gl.uniform1i(heatUniforms.heaterEnabled, heaterEnabled ? 1 : 0);
-    gl.uniform2i(heatUniforms.heaterCell, heaterX, heaterY);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     currentTarget = 1 - currentTarget;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -304,9 +371,17 @@ void main() {
     gl.bindTexture(gl.TEXTURE_2D, targets[currentTarget].texture);
     gl.uniform1i(displayUniforms.temperature, 0);
     gl.uniform2f(displayUniforms.canvasSize, canvas.width, canvas.height);
+    gl.uniform1i(displayUniforms.gridSize, gridSize);
+    gl.uniform1f(displayUniforms.cellEdge, cellEdge);
+    gl.uniform1f(displayUniforms.heaterArea, heaterArea);
+    gl.uniform2f(displayUniforms.heaterCenter, heaterX, heaterY);
     gl.uniform1i(displayUniforms.heaterEnabled, heaterEnabled ? 1 : 0);
-    gl.uniform2i(displayUniforms.heaterCell, heaterX, heaterY);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
+
+  function updateGridInfo() {
+    gridInfo.textContent =
+      `${gridSize} × ${gridSize} cells · ${(cellEdge * 1000).toFixed(3)} mm per cell`;
   }
 
   function render() {
@@ -325,10 +400,13 @@ void main() {
       accumulator += elapsed;
 
       let steps = 0;
-      while (accumulator >= STEP_SECONDS && steps < MAX_STEPS_PER_FRAME) {
+      while (
+        accumulator >= stepSeconds &&
+        steps < MAX_STEPS_PER_FRAME
+      ) {
         drawTemperature();
-        simulationTime += STEP_SECONDS;
-        accumulator -= STEP_SECONDS;
+        simulationTime += stepSeconds;
+        accumulator -= stepSeconds;
         steps += 1;
       }
     }
@@ -354,7 +432,47 @@ void main() {
     if (playing) scheduleFrame();
   }
 
+  function applyGridSize() {
+    const requestedSize = Number(gridInput.value);
+
+    if (
+      !Number.isInteger(requestedSize) ||
+      requestedSize < MIN_GRID_SIZE ||
+      requestedSize > MAX_GRID_SIZE
+    ) {
+      gridInput.setAttribute("aria-invalid", "true");
+      status.textContent =
+        `Enter a whole number from ${MIN_GRID_SIZE} to ${MAX_GRID_SIZE}.`;
+      return;
+    }
+
+    gridInput.removeAttribute("aria-invalid");
+
+    let nextTargets;
+    try {
+      nextTargets = createTargets(requestedSize);
+    } catch (error) {
+      status.textContent = `Could not create that grid: ${error.message}`;
+      return;
+    }
+
+    setPlaying(false);
+    disposeTargets(targets);
+    targets = nextTargets;
+    currentTarget = 0;
+    simulationTime = 0;
+    accumulator = 0;
+    updateGridPhysics(requestedSize);
+    updateGridInfo();
+    render();
+  }
+
   toggleButton.addEventListener("click", () => setPlaying(!playing));
+  applyGridButton.addEventListener("click", applyGridSize);
+
+  gridInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") applyGridSize();
+  });
 
   document.addEventListener("keydown", (event) => {
     if (event.code !== "Space" || event.repeat || event.isComposing) return;
@@ -377,10 +495,10 @@ void main() {
     const x = (event.clientX - bounds.left) / bounds.width;
     const y = (event.clientY - bounds.top) / bounds.height;
 
-    heaterX = Math.max(0, Math.min(99, Math.floor(x * SIZE)));
-    heaterY = SIZE - 1 - Math.max(0, Math.min(99, Math.floor(y * SIZE)));
+    heaterX = Math.max(0, Math.min(PLATE_SIZE, x * PLATE_SIZE));
+    heaterY = PLATE_SIZE - Math.max(0, Math.min(1, y)) * PLATE_SIZE;
     heaterEnabled = true;
-    updateHeatingRate();
+    updateHeaterGeometry();
 
     if (!playing) render();
   });
@@ -390,6 +508,7 @@ void main() {
     if (!playing) render();
   });
 
-  updateHeatingRate();
+  updateGridPhysics(gridSize);
+  updateGridInfo();
   render();
 })();

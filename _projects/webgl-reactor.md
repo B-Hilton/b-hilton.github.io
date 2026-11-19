@@ -1,7 +1,7 @@
 ---
 layout: page
 title: WebGL Reactor
-description: A WebGL heat-transport benchmark on a 100 by 100 pure-iron grid.
+description: A WebGL heat-transport benchmark on a pure-iron grid.
 img: assets/img/no_image.png
 importance: 5
 category: STEM
@@ -9,28 +9,45 @@ category: STEM
 
 <p>
   Move the cursor over the grid to apply <strong>10 W total</strong> across a
-  3×3 spot. Press <kbd>Space</kbd> to play or pause.
+  fixed 3 mm × 3 mm spot. Press <kbd>Space</kbd> to play or pause.
 </p>
 
-<canvas
-  id="webgl-reactor-canvas"
-  width="600"
-  height="600"
-  role="img"
-  aria-label="Heat map of a 100 by 100 iron grid. Move the cursor here to heat a 3 by 3 spot."
-  style="display: block; width: 100%; max-width: 600px; height: auto; aspect-ratio: 1; border: 1px solid #64748b; box-sizing: border-box; touch-action: none;"
-></canvas>
+<div style="display: flex; align-items: flex-start; gap: 1.25rem; flex-wrap: wrap;">
+  <canvas
+    id="webgl-reactor-canvas"
+    width="600"
+    height="600"
+    role="img"
+    aria-label="Heat map of a pure-iron plate. Move the cursor here to heat a 3 millimeter square spot."
+    style="display: block; flex: 1 1 440px; min-width: 0; width: 100%; max-width: 600px; height: auto; aspect-ratio: 1; border: 1px solid #64748b; box-sizing: border-box; touch-action: none;"
+  ></canvas>
 
-<div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem;">
-  <button type="button" id="webgl-reactor-toggle" aria-pressed="false">Play</button>
-  <span id="webgl-reactor-status" role="status" aria-live="polite">Paused · 0.00 s</span>
+  <aside style="flex: 0 1 200px; min-width: 170px;">
+    <label for="webgl-reactor-grid-size"><strong>Cells per side</strong></label>
+    <input
+      id="webgl-reactor-grid-size"
+      type="number"
+      min="3"
+      max="256"
+      step="1"
+      value="100"
+      inputmode="numeric"
+      style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
+    >
+    <button type="button" id="webgl-reactor-apply-grid">Apply grid size</button>
+    <p id="webgl-reactor-grid-info" style="margin-top: 0.75rem;">
+      100 × 100 cells · 1 mm per cell
+    </p>
+    <button type="button" id="webgl-reactor-toggle" aria-pressed="false">Play</button>
+    <p id="webgl-reactor-status" role="status" aria-live="polite">Paused · 0.00 s</p>
+  </aside>
 </div>
 
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
-  Grid: 100×100 cells, 1 mm per side. The model treats each cell as a 1 mm-thick
-  slice, uses constant near-room-temperature pure-iron properties, and holds
-  the outermost cells at 300 K. Colors span 300–380 K; red means 380 K or
-  higher.
+  The plate stays 100 mm × 100 mm and 1 mm thick; changing resolution changes
+  cell size, not plate size. The heater remains 3 mm × 3 mm. The outermost
+  cells stay at 300 K. Applying a new grid size resets the plate to 300 K and
+  pauses the simulation. Colors span 300–380 K; red means 380 K or higher.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url }}" defer></script>
