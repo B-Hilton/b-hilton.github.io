@@ -165,6 +165,13 @@ void main() {
     }
   }
 
+  vec2 cellPixels = u_canvasSize / float(u_gridSize);
+  vec2 withinCellPixels = fract(gl_FragCoord.xy / cellPixels) * cellPixels;
+  vec2 distanceToCellEdge = min(withinCellPixels, cellPixels - withinCellPixels);
+  if (min(distanceToCellEdge.x, distanceToCellEdge.y) < 0.60) {
+    displayColor *= 0.62;
+  }
+
   color = vec4(displayColor, 1.0);
 }`;
 
@@ -447,6 +454,7 @@ void main() {
     }
 
     gridInput.removeAttribute("aria-invalid");
+    if (requestedSize === gridSize) return;
 
     let nextTargets;
     try {
@@ -470,6 +478,7 @@ void main() {
   toggleButton.addEventListener("click", () => setPlaying(!playing));
   applyGridButton.addEventListener("click", applyGridSize);
 
+  gridInput.addEventListener("change", applyGridSize);
   gridInput.addEventListener("keydown", (event) => {
     if (event.key === "Enter") applyGridSize();
   });

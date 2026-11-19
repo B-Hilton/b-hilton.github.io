@@ -50,4 +50,4 @@ category: STEM
   pauses the simulation. Colors span 300–380 K; red means 380 K or higher.
 </p>
 
-<script src="{{ '/assets/js/webgl-reactor.js' | relative_url }}" defer></script>
+<script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>
