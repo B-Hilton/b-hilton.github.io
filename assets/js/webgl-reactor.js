@@ -6,10 +6,18 @@
   const HEATER_SIZE = 0.003;
   const HEATER_HALF_SIZE = HEATER_SIZE / 2;
   const POWER_WATTS = 1000;
-  const DENSITY = 7870;
-  const SPECIFIC_HEAT = 456;
-  const CONDUCTIVITY = 80.2;
-  const DIFFUSIVITY = CONDUCTIVITY / (DENSITY * SPECIFIC_HEAT);
+  const MATERIALS = [
+    { name: "Vacuum", conductivity: 0, volumetricHeatCapacity: 0 },
+    { name: "Concrete", conductivity: 1.4, volumetricHeatCapacity: 2300 * 880 },
+    { name: "Steel", conductivity: 54, volumetricHeatCapacity: 7850 * 465 },
+    { name: "Water", conductivity: 0.61, volumetricHeatCapacity: 996.7 * 4179.7 },
+    { name: "Air", conductivity: 0.02624, volumetricHeatCapacity: 1.1774 * 1005.7 },
+  ];
+  const MAX_DIFFUSIVITY = Math.max(
+    ...MATERIALS.slice(1).map(
+      (material) => material.conductivity / material.volumetricHeatCapacity
+    )
+  );
   const DIFFUSION_NUMBER = 0.20;
   const MAX_HEAT_STEP_SECONDS = 1 / 60;
   const MIN_GRID_SIZE = 16;
@@ -33,6 +41,15 @@
   const gridInfo = document.getElementById("webgl-reactor-grid-info");
   const neutronInfo = document.getElementById("webgl-reactor-neutron-info");
   const neutronRateInput = document.getElementById("webgl-reactor-neutron-rate");
+  const drawingControls = document.getElementById("webgl-reactor-drawing-controls");
+  const simulationControls = document.getElementById("webgl-reactor-simulation-controls");
+  const materialInput = document.getElementById("webgl-reactor-material");
+  const brushInput = document.getElementById("webgl-reactor-brush");
+  const brushValue = document.getElementById("webgl-reactor-brush-value");
+  const simulateButton = document.getElementById("webgl-reactor-simulate");
+  const resetButton = document.getElementById("webgl-reactor-reset");
+  const editButton = document.getElementById("webgl-reactor-edit");
+  const averageTemperature = document.getElementById("webgl-reactor-average");
   if (
     !canvas ||
     !toggleButton ||
@@ -41,7 +58,16 @@
     !applyGridButton ||
     !gridInfo ||
     !neutronInfo ||
-    !neutronRateInput
+    !neutronRateInput ||
+    !drawingControls ||
+    !simulationControls ||
+    !materialInput ||
+    !brushInput ||
+    !brushValue ||
+    !simulateButton ||
+    !resetButton ||
+    !editButton ||
+    !averageTemperature
   ) {
     return;
   }
@@ -81,6 +107,7 @@ precision highp int;
 
 uniform sampler2D u_previous;
 uniform sampler2D u_neutronPower;
+uniform usampler2D u_materials;
 uniform int u_gridSize;
 uniform float u_cellEdge;
 uniform float u_diffusionStep;
@@ -92,22 +119,54 @@ uniform int u_heaterEnabled;
 
 layout(location = 0) out float nextTemperature;
 
+float conductivity(uint material) {
+  if (material == 1u) return 1.4;
+  if (material == 2u) return 54.0;
+  if (material == 3u) return 0.61;
+  if (material == 4u) return 0.02624;
+  return 0.0;
+}
+
+float volumetricHeatCapacity(uint material) {
+  if (material == 1u) return 2300.0 * 880.0;
+  if (material == 2u) return 7850.0 * 465.0;
+  if (material == 3u) return 996.7 * 4179.7;
+  if (material == 4u) return 1.1774 * 1005.7;
+  return 0.0;
+}
+
+float faceHeatTransfer(uint neighborMaterial, float neighborTemperature, uint material, float center) {
+  float neighborK = conductivity(neighborMaterial);
+  if (neighborK <= 0.0) return 0.0;
+  float materialK = conductivity(material);
+  float faceK = 2.0 * materialK * neighborK / (materialK + neighborK);
+  return faceK * (neighborTemperature - center);
+}
+
 void main() {
   ivec2 cell = ivec2(gl_FragCoord.xy);
+  uint material = texelFetch(u_materials, cell, 0).r;
+
+  if (material == 0u) {
+    nextTemperature = 300.0;
+    return;
+  }
 
   ivec2 lastCell = ivec2(u_gridSize - 1);
   ivec2 leftCell = max(cell + ivec2(-1, 0), ivec2(0));
   ivec2 rightCell = min(cell + ivec2(1, 0), lastCell);
   ivec2 lowerCell = max(cell + ivec2(0, -1), ivec2(0));
   ivec2 upperCell = min(cell + ivec2(0, 1), lastCell);
-  float center = texelFetch(u_previous, cell, 0).r;
-  float neighbors =
-    texelFetch(u_previous, leftCell, 0).r +
-    texelFetch(u_previous, rightCell, 0).r +
-    texelFetch(u_previous, lowerCell, 0).r +
-    texelFetch(u_previous, upperCell, 0).r;
 
-  float temperature = center + u_diffusionStep * (neighbors - 4.0 * center);
+  float center = texelFetch(u_previous, cell, 0).r;
+  float cellCapacity = volumetricHeatCapacity(material);
+  float heatTransfer =
+    faceHeatTransfer(texelFetch(u_materials, leftCell, 0).r, texelFetch(u_previous, leftCell, 0).r, material, center) +
+    faceHeatTransfer(texelFetch(u_materials, rightCell, 0).r, texelFetch(u_previous, rightCell, 0).r, material, center) +
+    faceHeatTransfer(texelFetch(u_materials, lowerCell, 0).r, texelFetch(u_previous, lowerCell, 0).r, material, center) +
+    faceHeatTransfer(texelFetch(u_materials, upperCell, 0).r, texelFetch(u_previous, upperCell, 0).r, material, center);
+  float temperature =
+    center + u_diffusionStep * heatTransfer / cellCapacity;
 
   if (u_heaterEnabled == 1 && u_heaterArea > 0.0) {
     vec2 cellMin = vec2(cell) * u_cellEdge;
@@ -119,11 +178,11 @@ void main() {
       min(cellMax, spotMax) - max(cellMin, spotMin)
     );
     float overlapArea = overlap.x * overlap.y;
-    temperature += u_heatingScale * overlapArea;
+    temperature += u_heatingScale * overlapArea / cellCapacity;
   }
 
   float neutronPower = texelFetch(u_neutronPower, cell, 0).r;
-  temperature += neutronPower * u_powerToTemperatureScale;
+  temperature += neutronPower * u_powerToTemperatureScale / cellCapacity;
 
   bool isEdge =
     cell.x == 0 || cell.y == 0 ||
@@ -131,7 +190,7 @@ void main() {
   if (isEdge) {
     float edgeHeatLossWatts =
       1.23e-11 * (pow(center, 4.0) - 8.1e9);
-    temperature -= edgeHeatLossWatts * u_powerToTemperatureScale;
+    temperature -= edgeHeatLossWatts * u_powerToTemperatureScale / cellCapacity;
   }
 
   nextTemperature = temperature;
@@ -142,18 +201,19 @@ precision highp float;
 precision highp int;
 
 uniform sampler2D u_temperature;
+uniform usampler2D u_materials;
 uniform vec2 u_canvasSize;
 uniform int u_gridSize;
 uniform float u_cellEdge;
 uniform float u_heaterArea;
 uniform vec2 u_heaterCenter;
 uniform int u_heaterEnabled;
+uniform int u_viewMaterials;
 
 out vec4 color;
 
 vec3 heatColor(float temperature) {
   float value = clamp((temperature - 300.0) / 80.0, 0.0, 1.0);
-
   if (value < 0.25) {
     return mix(vec3(0.015, 0.07, 0.30), vec3(0.00, 0.78, 1.00), value * 4.0);
   }
@@ -166,16 +226,26 @@ vec3 heatColor(float temperature) {
   return mix(vec3(1.00, 0.86, 0.02), vec3(0.95, 0.05, 0.01), (value - 0.75) * 4.0);
 }
 
+vec3 materialColor(uint material) {
+  if (material == 1u) return vec3(0.48, 0.47, 0.43);
+  if (material == 2u) return vec3(0.66, 0.76, 0.86);
+  if (material == 3u) return vec3(0.06, 0.32, 0.88);
+  if (material == 4u) return vec3(0.42, 0.76, 0.73);
+  return vec3(0.015, 0.025, 0.045);
+}
+
 void main() {
   ivec2 cell = ivec2(
     floor(gl_FragCoord.xy / u_canvasSize * float(u_gridSize))
   );
   cell = clamp(cell, ivec2(0), ivec2(u_gridSize - 1));
-
+  uint material = texelFetch(u_materials, cell, 0).r;
   float temperature = texelFetch(u_temperature, cell, 0).r;
-  vec3 displayColor = heatColor(temperature);
+  vec3 displayColor = u_viewMaterials == 1
+    ? materialColor(material)
+    : heatColor(temperature);
 
-  if (u_heaterEnabled == 1 && u_heaterArea > 0.0) {
+  if (u_viewMaterials == 0 && u_heaterEnabled == 1 && u_heaterArea > 0.0) {
     vec2 cellMin = vec2(cell) * u_cellEdge;
     vec2 cellMax = cellMin + vec2(u_cellEdge);
     vec2 spotMin = u_heaterCenter - vec2(0.0015);
@@ -184,7 +254,6 @@ void main() {
       vec2(0.0),
       min(cellMax, spotMax) - max(cellMin, spotMin)
     );
-
     if (overlap.x > 0.0 && overlap.y > 0.0) {
       displayColor = mix(displayColor, vec3(1.0, 0.78, 0.12), 0.30);
     }
@@ -198,6 +267,35 @@ void main() {
   }
 
   color = vec4(displayColor, 1.0);
+}`;
+
+  const averageSource = `#version 300 es
+precision highp float;
+precision highp int;
+
+uniform sampler2D u_source;
+uniform usampler2D u_materials;
+uniform ivec2 u_sourceSize;
+uniform int u_firstPass;
+layout(location = 0) out vec4 total;
+
+void main() {
+  ivec2 first = ivec2(gl_FragCoord.xy) * 2;
+  vec2 sumAndCount = vec2(0.0);
+  for (int y = 0; y < 2; y++) {
+    for (int x = 0; x < 2; x++) {
+      ivec2 sourceCell = first + ivec2(x, y);
+      if (sourceCell.x >= u_sourceSize.x || sourceCell.y >= u_sourceSize.y) continue;
+      if (u_firstPass == 1) {
+        if (texelFetch(u_materials, sourceCell, 0).r != 0u) {
+          sumAndCount += vec2(texelFetch(u_source, sourceCell, 0).r, 1.0);
+        }
+      } else {
+        sumAndCount += texelFetch(u_source, sourceCell, 0).rg;
+      }
+    }
+  }
+  total = vec4(sumAndCount, 0.0, 1.0);
 }`;
 
   const neutronVertexSource = `#version 300 es
@@ -263,22 +361,33 @@ void main() {
   let heatProgram;
   let displayProgram;
   let neutronProgram;
+  let averageProgram;
   let neutronBuffer;
   let neutronHeatTexture;
+  let materialTexture;
   let neutronHeatField;
+  let materialIds;
   let targets = [];
+  let averageTargets = [];
   let neutronCount = 0;
   let spawnRemainder = 0;
   let neutronSpawnRate = DEFAULT_NEUTRON_SPAWN_RATE;
   let showNeutrons = false;
-  let neutronHeatScale = 0;
+  let powerToTemperatureScale = 0;
   let randomState = ((Math.random() * 0xffffffff) ^ Date.now()) >>> 0;
   if (randomState === 0) randomState = 1;
   let gridSize = 100;
   let cellEdge = PLATE_SIZE / gridSize;
+  materialIds = new Uint8Array(gridSize * gridSize);
   let stepSeconds = 0;
   let diffusionStep = 0;
   let heatingScale = 0;
+  let phase = "drawing";
+  let pointerPainting = false;
+  let lastPaintCellX = null;
+  let lastPaintCellY = null;
+  let averageUpdateElapsed = 0;
+  let brushSize = 1;
 
   let playing = false;
   let simulationTime = 0;
@@ -295,14 +404,12 @@ void main() {
     gridSize = size;
     cellEdge = PLATE_SIZE / gridSize;
     stepSeconds = Math.min(
-      DIFFUSION_NUMBER * cellEdge * cellEdge / DIFFUSIVITY,
+      DIFFUSION_NUMBER * cellEdge * cellEdge / MAX_DIFFUSIVITY,
       MAX_HEAT_STEP_SECONDS
     );
-    diffusionStep =
-      DIFFUSIVITY * stepSeconds / (cellEdge * cellEdge);
+    diffusionStep = stepSeconds / (cellEdge * cellEdge);
     const cellVolume = cellEdge * cellEdge * PLATE_THICKNESS;
-    neutronHeatScale =
-      stepSeconds / (DENSITY * SPECIFIC_HEAT * cellVolume);
+    powerToTemperatureScale = stepSeconds / cellVolume;
     updateHeaterGeometry();
   }
 
@@ -314,10 +421,8 @@ void main() {
     heaterArea = Math.max(0, maxX - minX) * Math.max(0, maxY - minY);
 
     if (heaterArea > 0) {
-      const cellVolume = cellEdge * cellEdge * PLATE_THICKNESS;
       heatingScale =
-        POWER_WATTS * stepSeconds /
-        (DENSITY * SPECIFIC_HEAT * cellVolume * heaterArea);
+        POWER_WATTS * powerToTemperatureScale / heaterArea;
     } else {
       heatingScale = 0;
     }
@@ -396,6 +501,70 @@ void main() {
     return texture;
   }
 
+  function createMaterialTexture(size, pixels) {
+    const texture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.R8UI, size, size, 0,
+      gl.RED_INTEGER, gl.UNSIGNED_BYTE, pixels
+    );
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    return texture;
+  }
+
+  function createAverageTargets(size) {
+    const created = [];
+    let sourceWidth = size;
+    let sourceHeight = size;
+
+    try {
+      while (sourceWidth > 1 || sourceHeight > 1) {
+        const width = Math.ceil(sourceWidth / 2);
+        const height = Math.ceil(sourceHeight / 2);
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texImage2D(
+          gl.TEXTURE_2D, 0, gl.RGBA32F, width, height, 0,
+          gl.RGBA, gl.FLOAT, null
+        );
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+        gl.framebufferTexture2D(
+          gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0
+        );
+        const target = { texture, framebuffer, width, height };
+        created.push(target);
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+          throw new Error("Could not create the temperature-average reduction grid.");
+        }
+        sourceWidth = width;
+        sourceHeight = height;
+      }
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return created;
+    } catch (error) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      disposeAverageTargets(created);
+      throw error;
+    }
+  }
+
+  function disposeAverageTargets(items) {
+    for (const target of items) {
+      gl.deleteFramebuffer(target.framebuffer);
+      gl.deleteTexture(target.texture);
+    }
+  }
+
   function disposeTargets(items) {
     for (const target of items) {
       gl.deleteFramebuffer(target.framebuffer);
@@ -407,9 +576,12 @@ void main() {
     heatProgram = createProgram(heatSource);
     displayProgram = createProgram(displaySource);
     neutronProgram = createProgram(neutronFragmentSource, neutronVertexSource);
+    averageProgram = createProgram(averageSource);
     targets = createTargets(gridSize);
     neutronHeatTexture = createNeutronHeatTexture(gridSize);
+    materialTexture = createMaterialTexture(gridSize, materialIds);
     neutronHeatField = new Float32Array(gridSize * gridSize);
+    averageTargets = createAverageTargets(gridSize);
 
     neutronBuffer = gl.createBuffer();
     gl.bindVertexArray(vao);
@@ -433,6 +605,7 @@ void main() {
     cellEdge: gl.getUniformLocation(heatProgram, "u_cellEdge"),
     diffusionStep: gl.getUniformLocation(heatProgram, "u_diffusionStep"),
     heatingScale: gl.getUniformLocation(heatProgram, "u_heatingScale"),
+    materials: gl.getUniformLocation(heatProgram, "u_materials"),
     heaterArea: gl.getUniformLocation(heatProgram, "u_heaterArea"),
     heaterCenter: gl.getUniformLocation(heatProgram, "u_heaterCenter"),
     heaterEnabled: gl.getUniformLocation(heatProgram, "u_heaterEnabled"),
@@ -440,6 +613,8 @@ void main() {
 
   const displayUniforms = {
     temperature: gl.getUniformLocation(displayProgram, "u_temperature"),
+    materials: gl.getUniformLocation(displayProgram, "u_materials"),
+    viewMaterials: gl.getUniformLocation(displayProgram, "u_viewMaterials"),
     canvasSize: gl.getUniformLocation(displayProgram, "u_canvasSize"),
     gridSize: gl.getUniformLocation(displayProgram, "u_gridSize"),
     cellEdge: gl.getUniformLocation(displayProgram, "u_cellEdge"),
@@ -450,6 +625,13 @@ void main() {
 
   const neutronUniforms = {
     plateSize: gl.getUniformLocation(neutronProgram, "u_plateSize"),
+  };
+
+  const averageUniforms = {
+    source: gl.getUniformLocation(averageProgram, "u_source"),
+    materials: gl.getUniformLocation(averageProgram, "u_materials"),
+    sourceSize: gl.getUniformLocation(averageProgram, "u_sourceSize"),
+    firstPass: gl.getUniformLocation(averageProgram, "u_firstPass"),
   };
 
   function uploadNeutronHeatField() {
@@ -479,7 +661,10 @@ void main() {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, neutronHeatTexture);
     gl.uniform1i(heatUniforms.neutronPower, 1);
-    gl.uniform1f(heatUniforms.powerToTemperatureScale, neutronHeatScale);
+    gl.uniform1f(heatUniforms.powerToTemperatureScale, powerToTemperatureScale);
+    gl.activeTexture(gl.TEXTURE2);
+    gl.bindTexture(gl.TEXTURE_2D, materialTexture);
+    gl.uniform1i(heatUniforms.materials, 2);
     gl.activeTexture(gl.TEXTURE0);
     gl.uniform1i(heatUniforms.gridSize, gridSize);
     gl.uniform1f(heatUniforms.cellEdge, cellEdge);
@@ -493,6 +678,47 @@ void main() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
+  function updateAverageTemperature() {
+    if (averageTargets.length === 0) return;
+
+    let sourceTexture = targets[currentTarget].texture;
+    let sourceWidth = gridSize;
+    let sourceHeight = gridSize;
+    const result = new Float32Array(4);
+
+    for (let i = 0; i < averageTargets.length; i++) {
+      const target = averageTargets[i];
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
+      gl.viewport(0, 0, target.width, target.height);
+      gl.useProgram(averageProgram);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, sourceTexture);
+      gl.uniform1i(averageUniforms.source, 0);
+      gl.uniform2i(averageUniforms.sourceSize, sourceWidth, sourceHeight);
+      gl.uniform1i(averageUniforms.firstPass, i === 0 ? 1 : 0);
+      gl.activeTexture(gl.TEXTURE1);
+      gl.bindTexture(gl.TEXTURE_2D, materialTexture);
+      gl.uniform1i(averageUniforms.materials, 1);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      sourceTexture = target.texture;
+      sourceWidth = target.width;
+      sourceHeight = target.height;
+    }
+
+    const finalTarget = averageTargets[averageTargets.length - 1];
+    gl.bindFramebuffer(gl.FRAMEBUFFER, finalTarget.framebuffer);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, result);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    if (result[1] > 0) {
+      averageTemperature.textContent =
+        `Average temperature: ${(result[0] / result[1]).toFixed(2)} K`;
+    } else {
+      averageTemperature.textContent = "Average temperature: — (no material)";
+    }
+  }
+
   function drawCanvas() {
     gl.viewport(0, 0, canvas.width, canvas.height);
     gl.useProgram(displayProgram);
@@ -502,14 +728,19 @@ void main() {
     gl.uniform2f(displayUniforms.canvasSize, canvas.width, canvas.height);
     gl.uniform1i(displayUniforms.gridSize, gridSize);
     gl.uniform1f(displayUniforms.cellEdge, cellEdge);
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, materialTexture);
+    gl.uniform1i(displayUniforms.materials, 1);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.uniform1i(displayUniforms.viewMaterials, phase === "drawing" ? 1 : 0);
     gl.uniform1f(displayUniforms.heaterArea, heaterArea);
     gl.uniform2f(displayUniforms.heaterCenter, heaterX, heaterY);
-    gl.uniform1i(displayUniforms.heaterEnabled, heaterEnabled ? 1 : 0);
+    gl.uniform1i(displayUniforms.heaterEnabled, heaterEnabled && phase === "simulating" ? 1 : 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
   function drawNeutrons() {
-    if (!showNeutrons || neutronCount === 0) return;
+    if (phase !== "simulating" || !showNeutrons || neutronCount === 0) return;
 
     gl.useProgram(neutronProgram);
     gl.uniform1f(neutronUniforms.plateSize, PLATE_SIZE);
@@ -530,10 +761,12 @@ void main() {
   function render() {
     drawCanvas();
     drawNeutrons();
-    status.textContent =
-      `${playing ? "Playing" : "Paused"} · ${simulationTime.toFixed(2)} s`;
-    neutronInfo.textContent =
-      `${showNeutrons ? "Neutrons visible" : "Neutrons hidden"} · ${neutronCount} active (press N)`;
+    if (phase === "simulating") {
+      status.textContent =
+        `${playing ? "Playing" : "Paused"} · ${simulationTime.toFixed(2)} s`;
+      neutronInfo.textContent =
+        `${showNeutrons ? "Neutrons visible" : "Neutrons hidden"} · ${neutronCount} active (press N)`;
+    }
   }
 
   function randomUnit() {
@@ -608,6 +841,7 @@ void main() {
       lastTimestamp = timestamp;
       updateNeutrons(elapsed);
       accumulator += elapsed;
+      averageUpdateElapsed += elapsed;
 
       let steps = 0;
       while (
@@ -619,6 +853,10 @@ void main() {
         simulationTime += stepSeconds;
         accumulator -= stepSeconds;
         steps += 1;
+      }
+      if (averageUpdateElapsed >= 0.5) {
+        updateAverageTemperature();
+        averageUpdateElapsed = 0;
       }
     }
 
@@ -633,6 +871,7 @@ void main() {
   }
 
   function setPlaying(nextPlaying) {
+    if (phase !== "simulating") return;
     playing = nextPlaying;
     accumulator = 0;
     lastTimestamp = null;
@@ -643,47 +882,203 @@ void main() {
     if (playing) scheduleFrame();
   }
 
+  function resampleMaterialIds(previousIds, previousSize, nextSize) {
+    const nextIds = new Uint8Array(nextSize * nextSize);
+    for (let y = 0; y < nextSize; y++) {
+      const sourceY = Math.min(
+        previousSize - 1,
+        Math.floor((y / nextSize) * previousSize)
+      );
+      for (let x = 0; x < nextSize; x++) {
+        const sourceX = Math.min(
+          previousSize - 1,
+          Math.floor((x / nextSize) * previousSize)
+        );
+        nextIds[y * nextSize + x] = previousIds[sourceY * previousSize + sourceX];
+      }
+    }
+    return nextIds;
+  }
+
   function applyGridSize() {
     const requestedSize = Number(gridInput.value);
 
     if (
+      phase !== "drawing" ||
       !Number.isInteger(requestedSize) ||
       requestedSize < MIN_GRID_SIZE ||
       requestedSize > MAX_GRID_SIZE
     ) {
       gridInput.setAttribute("aria-invalid", "true");
-      status.textContent =
-        `Enter a whole number from ${MIN_GRID_SIZE} to ${MAX_GRID_SIZE}.`;
       return;
     }
 
     gridInput.removeAttribute("aria-invalid");
     if (requestedSize === gridSize) return;
 
+    const nextMaterials = resampleMaterialIds(materialIds, gridSize, requestedSize);
     let nextTargets;
     let nextNeutronHeatTexture;
+    let nextMaterialTexture;
+    let nextAverageTargets;
     try {
       nextTargets = createTargets(requestedSize);
       nextNeutronHeatTexture = createNeutronHeatTexture(requestedSize);
+      nextMaterialTexture = createMaterialTexture(requestedSize, nextMaterials);
+      nextAverageTargets = createAverageTargets(requestedSize);
     } catch (error) {
       if (nextTargets) disposeTargets(nextTargets);
       if (nextNeutronHeatTexture) gl.deleteTexture(nextNeutronHeatTexture);
+      if (nextMaterialTexture) gl.deleteTexture(nextMaterialTexture);
+      if (nextAverageTargets) disposeAverageTargets(nextAverageTargets);
       status.textContent = `Could not create that grid: ${error.message}`;
       return;
     }
 
-    setPlaying(false);
     disposeTargets(targets);
+    disposeAverageTargets(averageTargets);
     gl.deleteTexture(neutronHeatTexture);
-    neutronHeatTexture = nextNeutronHeatTexture;
-    neutronHeatField = new Float32Array(requestedSize * requestedSize);
+    gl.deleteTexture(materialTexture);
     targets = nextTargets;
+    averageTargets = nextAverageTargets;
+    neutronHeatTexture = nextNeutronHeatTexture;
+    materialTexture = nextMaterialTexture;
+    materialIds = nextMaterials;
+    neutronHeatField = new Float32Array(requestedSize * requestedSize);
+    neutronCount = 0;
+    spawnRemainder = 0;
     currentTarget = 0;
     simulationTime = 0;
     accumulator = 0;
     updateGridPhysics(requestedSize);
+    updateHeaterGeometry();
     updateGridInfo();
     render();
+  }
+
+  function setBrushSize(value) {
+    brushSize = Number(value);
+    brushValue.textContent = `${brushSize} × ${brushSize}`;
+  }
+
+  function uploadMaterialIds() {
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, materialTexture);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    gl.texSubImage2D(
+      gl.TEXTURE_2D,
+      0,
+      0,
+      0,
+      gridSize,
+      gridSize,
+      gl.RED_INTEGER,
+      gl.UNSIGNED_BYTE,
+      materialIds
+    );
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+    gl.activeTexture(gl.TEXTURE0);
+  }
+
+  function paintAt(event) {
+    const bounds = canvas.getBoundingClientRect();
+    const x = Math.max(0, Math.min(0.999999, (event.clientX - bounds.left) / bounds.width));
+    const y = Math.max(0, Math.min(0.999999, (event.clientY - bounds.top) / bounds.height));
+    const targetX = Math.floor(x * gridSize);
+    const targetY = Math.min(
+      gridSize - 1,
+      Math.floor((1 - y) * gridSize)
+    );
+    const steps = lastPaintCellX === null
+      ? 0
+      : Math.max(
+          Math.abs(targetX - lastPaintCellX),
+          Math.abs(targetY - lastPaintCellY)
+        );
+    const materialId = Number(materialInput.value);
+    let changed = false;
+
+    for (let step = 0; step <= steps; step++) {
+      const cellX = steps === 0
+        ? targetX
+        : Math.round(lastPaintCellX + (targetX - lastPaintCellX) * step / steps);
+      const cellY = steps === 0
+        ? targetY
+        : Math.round(lastPaintCellY + (targetY - lastPaintCellY) * step / steps);
+      const startX = Math.max(0, cellX - Math.floor(brushSize / 2));
+      const startY = Math.max(0, cellY - Math.floor(brushSize / 2));
+      const endX = Math.min(gridSize, startX + brushSize);
+      const endY = Math.min(gridSize, startY + brushSize);
+
+      for (let row = startY; row < endY; row++) {
+        for (let column = startX; column < endX; column++) {
+          const index = row * gridSize + column;
+          if (materialIds[index] !== materialId) {
+            materialIds[index] = materialId;
+            changed = true;
+          }
+        }
+      }
+    }
+
+    lastPaintCellX = targetX;
+    lastPaintCellY = targetY;
+    if (changed) {
+      uploadMaterialIds();
+      render();
+    }
+  }
+
+  function resetSimulation(startPlaying) {
+    playing = false;
+    toggleButton.textContent = "Play";
+    toggleButton.setAttribute("aria-pressed", "false");
+    accumulator = 0;
+    lastTimestamp = null;
+    simulationTime = 0;
+    averageUpdateElapsed = 0;
+    neutronCount = 0;
+    spawnRemainder = 0;
+    neutronHeatField.fill(0);
+    uploadNeutronHeatField();
+
+    const ambient = new Float32Array([300, 0, 0, 1]);
+    for (const target of targets) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
+      gl.clearBufferfv(gl.COLOR, 0, ambient);
+    }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    currentTarget = 0;
+    updateAverageTemperature();
+    render();
+    if (startPlaying) setPlaying(true);
+  }
+
+  function startSimulation() {
+    phase = "simulating";
+    drawingControls.hidden = true;
+    simulationControls.hidden = false;
+    resetSimulation(true);
+  }
+
+  function editDrawing() {
+    resetSimulation(false);
+    phase = "drawing";
+    drawingControls.hidden = false;
+    simulationControls.hidden = true;
+    showNeutrons = false;
+    heaterEnabled = false;
+    render();
+  }
+
+  function updateHeaterFromPointer(event) {
+    const bounds = canvas.getBoundingClientRect();
+    const x = (event.clientX - bounds.left) / bounds.width;
+    const y = (event.clientY - bounds.top) / bounds.height;
+    heaterX = Math.max(0, Math.min(PLATE_SIZE, x * PLATE_SIZE));
+    heaterY = PLATE_SIZE - Math.max(0, Math.min(1, y)) * PLATE_SIZE;
+    heaterEnabled = true;
+    updateHeaterGeometry();
   }
 
   neutronRateInput.addEventListener("input", () => {
@@ -701,6 +1096,10 @@ void main() {
     neutronSpawnRate = requestedRate;
   });
 
+  brushInput.addEventListener("input", () => setBrushSize(brushInput.value));
+  simulateButton.addEventListener("click", startSimulation);
+  resetButton.addEventListener("click", () => resetSimulation(true));
+  editButton.addEventListener("click", editDrawing);
   toggleButton.addEventListener("click", () => setPlaying(!playing));
   applyGridButton.addEventListener("click", applyGridSize);
 
@@ -710,6 +1109,8 @@ void main() {
   });
 
   document.addEventListener("keydown", (event) => {
+    if (phase !== "simulating" || event.repeat || event.isComposing) return;
+
     const target = event.target;
     if (
       target instanceof HTMLElement &&
@@ -719,38 +1120,56 @@ void main() {
       return;
     }
 
-    if (event.code === "Space" && !event.repeat && !event.isComposing) {
+    if (event.code === "Space") {
       event.preventDefault();
       setPlaying(!playing);
-    } else if (
-      event.key.toLowerCase() === "n" &&
-      !event.repeat &&
-      !event.isComposing
-    ) {
+    } else if (event.key.toLowerCase() === "n") {
       showNeutrons = !showNeutrons;
       render();
     }
   });
 
+  canvas.addEventListener("pointerdown", (event) => {
+    if (phase === "drawing") {
+      pointerPainting = true;
+      lastPaintCellX = null;
+      lastPaintCellY = null;
+      canvas.setPointerCapture(event.pointerId);
+      paintAt(event);
+    } else {
+      updateHeaterFromPointer(event);
+    }
+  });
+
   canvas.addEventListener("pointermove", (event) => {
-    const bounds = canvas.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) / bounds.width;
-    const y = (event.clientY - bounds.top) / bounds.height;
+    if (phase === "drawing") {
+      if (pointerPainting) paintAt(event);
+      return;
+    }
 
-    heaterX = Math.max(0, Math.min(PLATE_SIZE, x * PLATE_SIZE));
-    heaterY = PLATE_SIZE - Math.max(0, Math.min(1, y)) * PLATE_SIZE;
-    heaterEnabled = true;
-    updateHeaterGeometry();
-
+    updateHeaterFromPointer(event);
     if (!playing) render();
   });
 
+  const stopPainting = () => {
+    pointerPainting = false;
+    lastPaintCellX = null;
+    lastPaintCellY = null;
+  };
+  canvas.addEventListener("pointerup", stopPainting);
+  canvas.addEventListener("pointercancel", stopPainting);
+  canvas.addEventListener("lostpointercapture", stopPainting);
+
   canvas.addEventListener("pointerleave", () => {
-    heaterEnabled = false;
-    if (!playing) render();
+    if (phase === "simulating") {
+      heaterEnabled = false;
+      if (!playing) render();
+    }
   });
 
   updateGridPhysics(gridSize);
   updateGridInfo();
-  render();
+  setBrushSize(brushInput.value);
+  drawCanvas();
+  averageTemperature.textContent = "Average temperature: — (no material)";
 })();

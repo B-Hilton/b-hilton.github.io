@@ -1,15 +1,15 @@
 ---
 layout: page
 title: WebGL Reactor
-description: A WebGL heat-transport benchmark on a pure-iron grid.
+description: A 2D WebGL heat simulation with a brush-based material editor.
 img: assets/img/no_image.png
 importance: 5
 category: STEM
 ---
 
 <p>
-  Move the cursor over the grid to apply <strong>10 W total</strong> across a
-  fixed 3 mm × 3 mm spot. Press <kbd>Space</kbd> to play or pause.
+  Draw a material layout on the grid, then press <strong>Simulate</strong>.
+  During simulation, move the cursor over the grid to apply the 1,000 W heater.
 </p>
 
 <div style="display: flex; align-items: flex-start; gap: 1.25rem; flex-wrap: wrap;">
@@ -18,11 +18,11 @@ category: STEM
     width="600"
     height="600"
     role="img"
-    aria-label="Heat map of a 10 meter square pure-iron plate. Move the cursor here to heat a 3 millimeter square spot."
+    aria-label="Material drawing and heat simulation grid for a 10 meter square plate."
     style="display: block; flex: 1 1 440px; min-width: 0; width: 100%; max-width: 600px; height: auto; aspect-ratio: 1; border: 1px solid #64748b; box-sizing: border-box; touch-action: none;"
   ></canvas>
 
-  <aside style="flex: 0 1 200px; min-width: 170px;">
+  <aside id="webgl-reactor-drawing-controls" style="flex: 0 1 220px; min-width: 180px;">
     <label for="webgl-reactor-grid-size"><strong>Cells per side</strong></label>
     <input
       id="webgl-reactor-grid-size"
@@ -34,6 +34,34 @@ category: STEM
       inputmode="numeric"
       style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
     >
+    <button type="button" id="webgl-reactor-apply-grid">Apply grid size</button>
+    <p id="webgl-reactor-grid-info" style="margin-top: 0.75rem;">
+      100 × 100 cells · 100 mm per cell
+    </p>
+
+    <label for="webgl-reactor-material"><strong>Material</strong></label>
+    <select id="webgl-reactor-material" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+      <option value="0">Vacuum (eraser)</option>
+      <option value="1" selected>Concrete (~1.4 W/m·K)</option>
+      <option value="2">Steel (~54 W/m·K)</option>
+      <option value="3">Water (~0.61 W/m·K)</option>
+      <option value="4">Air (~0.026 W/m·K)</option>
+    </select>
+
+    <label for="webgl-reactor-brush"><strong>Brush Size: <output id="webgl-reactor-brush-value">1 × 1</output></strong></label>
+    <input
+      id="webgl-reactor-brush"
+      type="range"
+      min="1"
+      max="50"
+      step="1"
+      value="1"
+      style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;"
+    >
+    <button type="button" id="webgl-reactor-simulate">Simulate</button>
+  </aside>
+
+  <aside id="webgl-reactor-simulation-controls" style="flex: 0 1 220px; min-width: 180px;" hidden>
     <label for="webgl-reactor-neutron-rate"><strong>Neutrons per second</strong></label>
     <input
       id="webgl-reactor-neutron-rate"
@@ -45,29 +73,24 @@ category: STEM
       inputmode="numeric"
       style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
     >
-    <button type="button" id="webgl-reactor-apply-grid">Apply grid size</button>
-    <p id="webgl-reactor-grid-info" style="margin-top: 0.75rem;">
-      100 × 100 cells · 100 mm per cell
-    </p>
-    <button type="button" id="webgl-reactor-toggle" aria-pressed="false">Play</button>
-    <p id="webgl-reactor-status" role="status" aria-live="polite">Paused · 0.00 s</p>
+    <button type="button" id="webgl-reactor-toggle" aria-pressed="true">Pause</button>
+    <p id="webgl-reactor-status" role="status" aria-live="polite">Playing · 0.00 s</p>
+    <p id="webgl-reactor-average" role="status" aria-live="polite">Average temperature: —</p>
+    <p id="webgl-reactor-neutron-info" role="status" aria-live="polite">Neutrons: 0 / 4095</p>
+    <button type="button" id="webgl-reactor-reset">Reset</button>
+    <button type="button" id="webgl-reactor-edit" style="display: block; margin-top: 0.5rem;">Back to Drawing</button>
   </aside>
 </div>
 
-<p id="webgl-reactor-neutron-info" role="status" aria-live="polite">
-  Neutrons hidden · 0 active (press N)
-</p>
-
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
-  The plate stays 10 m × 10 m and 1 mm thick; changing resolution changes
-  cell size, not plate size. Choose between 16 × 16 and 512 × 512 cells. The
-  heater remains 3 mm × 3 mm. Each edge cell exchanges heat with the 300 K
-  surroundings at a rate of 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W per cell.
-  Applying a new grid size resets the plate to 300 K and pauses the simulation.
-  Set the neutron spawn rate with the input above. Neutrons spawn randomly
-  with speeds of 3–12 mm/s, disappear at the edges, and each adds 1 W to its
-  current grid cell. Press N to toggle their display (maximum 4,095). Colors
-  span 300–380 K; red means 380 K or higher.
+  The plate is 10 m × 10 m and 1 mm thick. It starts as vacuum; paint concrete,
+  steel, water, or air with a 1–50 cell square brush. The material grid stores
+  IDs 0–4, and vacuum has no heat capacity or conduction. Heat moves between
+  neighboring cells according to their material conductivities. Water and air
+  are currently stationary, with no fluid motion. Edge cells continue to
+  exchange heat with 300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W
+  per edge cell. The heater remains 3 mm × 3 mm and 1,000 W. Neutrons each add
+  50 W to the material cell they occupy. Press Space to pause or play.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>
