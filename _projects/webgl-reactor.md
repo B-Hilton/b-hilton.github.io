@@ -43,11 +43,18 @@ category: STEM
   </aside>
 </div>
 
+<p id="webgl-reactor-neutron-info" role="status" aria-live="polite">
+  Neutrons hidden · 0 active (press N)
+</p>
+
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
   The plate stays 100 mm × 100 mm and 1 mm thick; changing resolution changes
   cell size, not plate size. The heater remains 3 mm × 3 mm. The outermost
   cells stay at 300 K. Applying a new grid size resets the plate to 300 K and
-  pauses the simulation. Colors span 300–380 K; red means 380 K or higher.
+  pauses the simulation. Neutrons spawn randomly at 20/s with speeds of
+  3–12 mm/s, disappear at the edges, and each adds 0.01 W to its current cell.
+  Press N to toggle their display (maximum 4,095). Colors span 300–380 K; red
+  means 380 K or higher.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>
