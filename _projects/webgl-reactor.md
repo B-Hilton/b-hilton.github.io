@@ -9,7 +9,7 @@ category: STEM
 
 <p>
   Draw a material layout on the grid, then press <strong>Simulate</strong>.
-  During simulation, move the cursor over the grid to apply the 1,000 W heater.
+  During simulation, keep the cursor over the grid to emit one fast neutron per animation frame.
 </p>
 <p id="webgl-reactor-engine-status" role="status" aria-live="polite"></p>
 
@@ -37,7 +37,11 @@ category: STEM
         <option value="2">Steel (~54 W/m·K)</option>
         <option value="3">Water (~0.61 W/m·K)</option>
         <option value="4">Air (~0.026 W/m·K)</option>
-        <option value="5">Pure U235 (~12.5 mm²/s diffusivity)</option>
+        <option value="5">Pure U235</option>
+        <option value="6">Cadmium-113</option>
+        <option value="7">Lead-208</option>
+        <option value="8">Plutonium-239</option>
+        <option value="9">Sodium-23 (dynamic)</option>
       </select>
 
       <label for="webgl-reactor-brush"><strong>Brush Size: <output id="webgl-reactor-brush-value">1 × 1</output></strong></label>
@@ -109,27 +113,30 @@ category: STEM
 
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
   The plate is 10 m × 10 m and 1 mm thick, with a 200 × 200 material grid. It
-  starts as vacuum; paint concrete, steel, water, air, or pure U235 with a 1–50
-  cell square brush. Export TXT or upload a 200 × 200 text grid using one hex
-  digit (0–F) per cell, with the top row first; 0 is vacuum. IDs 6–F are
-  reserved and currently simulate as insulating cells with concrete heat
-  capacity. Concrete, steel, and U235 are static; water and air flow at the
-  selected speed and direction. The universal heat transport multiplier scales
+  starts as vacuum; paint concrete, steel, water, air, U235, Cd-113, Pb-208,
+  Pu-239, or Na-23 with a 1–50 cell square brush. Export TXT or upload a
+  200 × 200 text grid using one hex digit (0–F) per cell, with the top row
+  first; 0 is vacuum. IDs A–F are reserved and currently simulate as insulating
+  cells with concrete heat capacity. Concrete, steel, U235, Cd-113, Pb-208, and
+  Pu-239 are static; water, air, and Na-23 flow at the selected speed and
+  direction. The universal heat transport multiplier scales
   conduction, boundary heat loss, and fluid advection. Steps/Frame sets the
   number of physics steps per display frame, from 0 to 100.
-  Neutrons spawn only in U235 at the selected rate, up to 4,096 live particles.
-  Their energy is sampled uniformly from 1 eV to 10 MeV and is independent of
-  their velocity. The simulation uses the compact, 2%-adaptive cross-section
-  table and a logarithmic hash for lookup. Material number densities are
-  concrete 0.083, steel 0.085, water 0.100, air 0.000051, and U235 0.048 in
-  units of 10²⁴ atoms/cm³. An absorbed neutron deposits a 500 W impulse for
-  one physics step; fission is not implemented. Neutrons are not drawn.
+  The cursor emits one fast neutron per animation frame while it remains over
+  the canvas. Each emitted neutron has a random direction and energy uniformly
+  sampled from 0.7 to 2 MeV. The Neutrons/sec control also emits neutrons at
+  random U235 cells; the combined live-particle cap is 4,096. Neutron energy
+  follows its velocity, and absorption is sampled from the supplied macroscopic
+  cross sections. The compact table uses a 2% adaptive error target and
+  logarithmic hash lookup. Absorption deposits a 500 W impulse for one physics
+  step; fission is not implemented. Neutrons are not drawn.
   Exported/imported material grids preserve all hexadecimal IDs. New fluid
   entering the grid is 300 K; heat leaving the outlet is shown as thermal power
   at 40% efficiency. Static edge materials exchange heat with 300 K surroundings.
-  The pointer still applies the 1,000 W heater while simulating. Press Space to
-  pause or play.
+  Steps/Frame controls neutron flight resolution as well as heat updates. Press
+  Space to pause or play.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>
+
 
