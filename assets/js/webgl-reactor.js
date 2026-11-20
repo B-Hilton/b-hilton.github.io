@@ -21,7 +21,7 @@
   const DIFFUSION_NUMBER = 0.20;
   const MAX_HEAT_STEP_SECONDS = 1 / 30;
   const SIMULATION_SPEED = 12;
-  const MAX_STEPS_PER_FRAME = 6;
+  const MAX_FLOW_SPEED_METERS_PER_SECOND = 4;
   const MAX_NEUTRONS = 4095;
   const DEFAULT_NEUTRON_SPAWN_RATE = 20;
   const MIN_NEUTRON_SPAWN_RATE = 0;
@@ -44,6 +44,8 @@
   const flowDirectionValue = document.getElementById("webgl-reactor-flow-direction-value");
   const flowSpeedInput = document.getElementById("webgl-reactor-flow-speed");
   const flowSpeedValue = document.getElementById("webgl-reactor-flow-speed-value");
+  const stepsPerFrameInput = document.getElementById("webgl-reactor-steps-per-frame");
+  const stepsPerFrameValue = document.getElementById("webgl-reactor-steps-per-frame-value");
   const thermalOutput = document.getElementById("webgl-reactor-thermal-output");
   const drawingControls = document.getElementById("webgl-reactor-drawing-controls");
   const simulationControls = document.getElementById("webgl-reactor-simulation-controls");
@@ -66,6 +68,8 @@
     !flowDirectionValue ||
     !flowSpeedInput ||
     !flowSpeedValue ||
+    !stepsPerFrameInput ||
+    !stepsPerFrameValue ||
     !thermalOutput ||
     !drawingControls ||
     !simulationControls ||
@@ -98,6 +102,7 @@
     neutronRateInput.disabled = true;
     flowDirectionInput.disabled = true;
     flowSpeedInput.disabled = true;
+    stepsPerFrameInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
     return;
@@ -475,6 +480,8 @@ void main() {
   let simulationTime = 0;
   let accumulator = 0;
   let lastTimestamp = null;
+  let lastFrameTimestamp = null;
+  let slowFrameStreak = 0;
   let animationFrame = null;
   let currentTarget = 0;
   let heaterEnabled = false;
@@ -770,7 +777,9 @@ void main() {
     gl.uniform2f(heatUniforms.heaterCenter, heaterX, heaterY);
     gl.uniform1i(heatUniforms.heaterEnabled, heaterEnabled ? 1 : 0);
     gl.uniform1i(heatUniforms.flowDirection, Number(flowDirectionInput.value));
-    gl.uniform1f(heatUniforms.flowSpeed, Number(flowSpeedInput.value));
+    const flowSpeedMetersPerSecond = Number(flowSpeedInput.value);
+    const flowStepFraction = flowSpeedMetersPerSecond * stepSeconds / (cellEdge * SIMULATION_SPEED);
+    gl.uniform1f(heatUniforms.flowSpeed, flowStepFraction);
     gl.uniform1f(heatUniforms.cellVolume, cellEdge * cellEdge * PLATE_THICKNESS);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     currentTarget = 1 - currentTarget;
@@ -945,26 +954,32 @@ void main() {
 
   function tick(timestamp) {
     animationFrame = null;
+    const frameDurationMs = lastFrameTimestamp === null
+      ? 0
+      : timestamp - lastFrameTimestamp;
+    lastFrameTimestamp = timestamp;
+    let steps = 0;
 
     if (playing) {
       if (lastTimestamp === null) lastTimestamp = timestamp;
       const elapsed = Math.min(timestamp - lastTimestamp, 100) / 1000;
       lastTimestamp = timestamp;
+      const maxStepsPerFrame = Number(stepsPerFrameInput.value);
+      const maxSimulationElapsed = stepSeconds * maxStepsPerFrame;
       const simulationElapsed = Math.min(
         elapsed * SIMULATION_SPEED,
-        stepSeconds * MAX_STEPS_PER_FRAME
+        maxSimulationElapsed
       );
       updateNeutrons(simulationElapsed);
       accumulator = Math.min(
         accumulator + simulationElapsed,
-        stepSeconds * MAX_STEPS_PER_FRAME
+        maxSimulationElapsed
       );
       averageUpdateElapsed += simulationElapsed;
 
-      let steps = 0;
       while (
         accumulator >= stepSeconds &&
-        steps < MAX_STEPS_PER_FRAME
+        steps < maxStepsPerFrame
       ) {
         if (steps === 0) uploadNeutronHeatField();
         drawTemperature();
@@ -979,6 +994,25 @@ void main() {
     }
 
     render();
+
+    if (document.visibilityState === "visible" && frameDurationMs > 1000 / 30) {
+      slowFrameStreak += 1;
+      if (slowFrameStreak > 1 && playing) {
+        const currentLimit = Number(stepsPerFrameInput.value);
+        const estimatedLimit = Math.floor(
+          steps * (1000 / 30) / frameDurationMs
+        );
+        const nextLimit = Math.max(0, Math.min(currentLimit - 1, estimatedLimit));
+        if (nextLimit < currentLimit) {
+          stepsPerFrameInput.value = String(nextLimit);
+          stepsPerFrameValue.textContent = String(nextLimit);
+        }
+        slowFrameStreak = 0;
+      }
+    } else {
+      slowFrameStreak = 0;
+    }
+
     if (playing) animationFrame = requestAnimationFrame(tick);
   }
 
@@ -993,6 +1027,8 @@ void main() {
     playing = nextPlaying;
     accumulator = 0;
     lastTimestamp = null;
+    lastFrameTimestamp = null;
+    slowFrameStreak = 0;
     toggleButton.textContent = playing ? "Pause" : "Play";
     toggleButton.setAttribute("aria-pressed", String(playing));
     render();
@@ -1079,6 +1115,8 @@ void main() {
     toggleButton.setAttribute("aria-pressed", "false");
     accumulator = 0;
     lastTimestamp = null;
+    lastFrameTimestamp = null;
+    slowFrameStreak = 0;
     simulationTime = 0;
     averageUpdateElapsed = 0;
     lastMeasuredExpelledEnergy = 0;
@@ -1134,9 +1172,16 @@ void main() {
     flowDirectionInput.setAttribute("aria-valuetext", FLOW_DIRECTIONS[direction]);
   });
   flowSpeedInput.addEventListener("input", () => {
-    const speed = Math.max(0, Math.min(1, Number(flowSpeedInput.value)));
+    const speed = Math.max(0, Math.min(MAX_FLOW_SPEED_METERS_PER_SECOND, Number(flowSpeedInput.value)));
     flowSpeedInput.value = String(speed);
-    flowSpeedValue.textContent = `${speed.toFixed(2)} cells per physics step`;
+    flowSpeedValue.textContent = `${speed.toFixed(1)} m/s`;
+  });
+
+  stepsPerFrameInput.addEventListener("input", () => {
+    const value = Math.max(0, Math.min(100, Math.round(Number(stepsPerFrameInput.value))));
+    stepsPerFrameInput.value = String(value);
+    stepsPerFrameValue.textContent = String(value);
+    slowFrameStreak = 0;
   });
 
   neutronRateInput.addEventListener("input", () => {
@@ -1230,7 +1275,8 @@ void main() {
   updateGridInfo();
   flowDirectionValue.textContent = FLOW_DIRECTIONS[Number(flowDirectionInput.value)];
   flowDirectionInput.setAttribute("aria-valuetext", flowDirectionValue.textContent);
-  flowSpeedValue.textContent = `${Number(flowSpeedInput.value).toFixed(2)} cells per physics step`;
+  flowSpeedValue.textContent = `${Number(flowSpeedInput.value).toFixed(1)} m/s`;
+  stepsPerFrameValue.textContent = stepsPerFrameInput.value;
   setBrushSize(brushInput.value);
   drawCanvas();
   averageTemperature.textContent = "Average temperature: — (no material)";

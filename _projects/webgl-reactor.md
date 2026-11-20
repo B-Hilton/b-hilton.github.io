@@ -73,8 +73,10 @@ category: STEM
   <aside id="webgl-reactor-flow-controls" style="flex: 0 1 220px; min-width: 180px;">
     <label for="webgl-reactor-flow-direction"><strong>Flow Direction: <output id="webgl-reactor-flow-direction-value">Up</output></strong></label>
     <input id="webgl-reactor-flow-direction" type="range" min="0" max="3" step="1" value="0" aria-valuetext="Up" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
-    <label for="webgl-reactor-flow-speed"><strong>Flow Speed: <output id="webgl-reactor-flow-speed-value">0.00 cells per physics step</output></strong></label>
-    <input id="webgl-reactor-flow-speed" type="range" min="0" max="1" step="0.01" value="0" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+    <label for="webgl-reactor-flow-speed"><strong>Flow Speed: <output id="webgl-reactor-flow-speed-value">0.0 m/s</output></strong></label>
+    <input id="webgl-reactor-flow-speed" type="range" min="0" max="4" step="0.1" value="0" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+    <label for="webgl-reactor-steps-per-frame"><strong>Steps/Frame: <output id="webgl-reactor-steps-per-frame-value">6</output></strong></label>
+    <input id="webgl-reactor-steps-per-frame" type="range" min="0" max="100" step="1" value="6" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
     <p id="webgl-reactor-thermal-output">Thermal power output (40% efficient): 0.00 W</p>
   </aside>
 </div>
@@ -83,13 +85,14 @@ category: STEM
   The plate is 10 m × 10 m and 1 mm thick, with a 200 × 200 material grid. It
   starts as vacuum; paint concrete, steel, water, or air with a 1–50 cell square
   brush. Concrete and steel are static. Water and air carry separate heat fields
-  that advect together in the selected direction. Flow speed moves a fraction
-  from 0 to 1 cell per physics step, so lower settings transfer only part of the
-  upstream heat on each step. At zero flow they behave as stationary materials.
-  Their heat fields are hidden and do not interact behind static solids, but
-  retain their temperatures until exposed again. New fluid entering the grid is
-  300 K. Heat leaving the outlet is accumulated and shown
-  as thermal power at 40% efficiency. Static edge materials exchange heat with
+  that advect together in the selected direction. Flow Speed is shown in m/s and
+  transfers a corresponding fraction of upstream heat each physics step, up to
+  4 m/s. At zero flow they behave as stationary materials. Steps/Frame sets the
+  physics step cap from 0 to 100; it automatically decreases after two
+  consecutive frames below 30 FPS to help the simulation keep up. Their heat
+  fields are hidden and do not interact behind static solids, but retain their
+  temperatures until exposed again. New fluid entering the grid is 300 K. Heat
+  leaving the outlet is accumulated and shown as thermal power at 40% efficiency. Static edge materials exchange heat with
   300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W per edge cell. The
   heater is 3 mm × 3 mm and 1,000 W. Neutrons each add 50 W to the material cell
   they occupy. Press Space to pause or play.
