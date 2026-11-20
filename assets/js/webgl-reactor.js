@@ -27,6 +27,8 @@
   const MIN_NEUTRON_SPAWN_RATE = 0;
   const MAX_NEUTRON_SPAWN_RATE = 1000;
   const NEUTRON_POWER_WATTS = 50;
+  const THERMAL_EFFICIENCY = 0.4;
+  const FLOW_DIRECTIONS = ["Up", "Down", "Right", "Left"];
   const NEUTRON_MIN_SPEED = 0.05;
   const NEUTRON_MAX_SPEED = 0.5;
   const neutronPositions = new Float32Array(MAX_NEUTRONS * 2);
@@ -38,6 +40,11 @@
   const gridInfo = document.getElementById("webgl-reactor-grid-info");
   const neutronInfo = document.getElementById("webgl-reactor-neutron-info");
   const neutronRateInput = document.getElementById("webgl-reactor-neutron-rate");
+  const flowDirectionInput = document.getElementById("webgl-reactor-flow-direction");
+  const flowDirectionValue = document.getElementById("webgl-reactor-flow-direction-value");
+  const flowSpeedInput = document.getElementById("webgl-reactor-flow-speed");
+  const flowSpeedValue = document.getElementById("webgl-reactor-flow-speed-value");
+  const thermalOutput = document.getElementById("webgl-reactor-thermal-output");
   const drawingControls = document.getElementById("webgl-reactor-drawing-controls");
   const simulationControls = document.getElementById("webgl-reactor-simulation-controls");
   const materialInput = document.getElementById("webgl-reactor-material");
@@ -55,6 +62,11 @@
     !gridInfo ||
     !neutronInfo ||
     !neutronRateInput ||
+    !flowDirectionInput ||
+    !flowDirectionValue ||
+    !flowSpeedInput ||
+    !flowSpeedValue ||
+    !thermalOutput ||
     !drawingControls ||
     !simulationControls ||
     !materialInput ||
@@ -84,6 +96,8 @@
     resetButton.disabled = true;
     editButton.disabled = true;
     neutronRateInput.disabled = true;
+    flowDirectionInput.disabled = true;
+    flowSpeedInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
     return;
@@ -97,6 +111,8 @@
     resetButton.disabled = true;
     editButton.disabled = true;
     neutronRateInput.disabled = true;
+    flowDirectionInput.disabled = true;
+    flowSpeedInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
     return;
@@ -118,14 +134,17 @@ uniform sampler2D u_neutronPower;
 uniform usampler2D u_materials;
 uniform int u_gridSize;
 uniform float u_cellEdge;
+uniform float u_cellVolume;
 uniform float u_diffusionStep;
 uniform float u_heatingScale;
 uniform float u_powerToTemperatureScale;
 uniform float u_heaterArea;
 uniform vec2 u_heaterCenter;
 uniform int u_heaterEnabled;
+uniform int u_flowDirection;
+uniform int u_flowShift;
 
-layout(location = 0) out float nextTemperature;
+layout(location = 0) out vec4 nextState;
 
 float conductivity(uint material) {
   if (material == 1u) return 1.4;
@@ -143,6 +162,30 @@ float volumetricHeatCapacity(uint material) {
   return 0.0;
 }
 
+ivec2 flowSourceCell(ivec2 cell) {
+  if (u_flowDirection == 0) return cell + ivec2(0, -1);
+  if (u_flowDirection == 1) return cell + ivec2(0, 1);
+  if (u_flowDirection == 2) return cell + ivec2(-1, 0);
+  return cell + ivec2(1, 0);
+}
+
+bool insideGrid(ivec2 cell) {
+  return cell.x >= 0 && cell.y >= 0 && cell.x < u_gridSize && cell.y < u_gridSize;
+}
+
+vec4 flowStateAt(ivec2 cell) {
+  if (u_flowShift == 0) return texelFetch(u_previous, cell, 0);
+  ivec2 sourceCell = flowSourceCell(cell);
+  if (!insideGrid(sourceCell)) return vec4(300.0, 300.0, 300.0, 0.0);
+  return texelFetch(u_previous, sourceCell, 0);
+}
+
+float temperatureFor(uint material, vec4 state) {
+  if (material == 3u) return state.g;
+  if (material == 4u) return state.b;
+  return state.r;
+}
+
 float faceHeatTransfer(uint neighborMaterial, float neighborTemperature, uint material, float center) {
   float neighborK = conductivity(neighborMaterial);
   if (neighborK <= 0.0) return 0.0;
@@ -151,57 +194,79 @@ float faceHeatTransfer(uint neighborMaterial, float neighborTemperature, uint ma
   return faceK * (neighborTemperature - center);
 }
 
+float expelledHeatEnergy() {
+  float energy = 0.0;
+  for (int index = 0; index < 200; index++) {
+    ivec2 outletCell;
+    if (u_flowDirection == 0) outletCell = ivec2(index, u_gridSize - 1);
+    else if (u_flowDirection == 1) outletCell = ivec2(index, 0);
+    else if (u_flowDirection == 2) outletCell = ivec2(u_gridSize - 1, index);
+    else outletCell = ivec2(0, index);
+    vec4 state = texelFetch(u_previous, outletCell, 0);
+    energy += max(state.g - 300.0, 0.0) * volumetricHeatCapacity(3u) * u_cellVolume;
+    energy += max(state.b - 300.0, 0.0) * volumetricHeatCapacity(4u) * u_cellVolume;
+  }
+  return energy;
+}
+
 void main() {
   ivec2 cell = ivec2(gl_FragCoord.xy);
   uint material = texelFetch(u_materials, cell, 0).r;
+  vec4 previousState = texelFetch(u_previous, cell, 0);
+  vec4 flowedState = flowStateAt(cell);
+  float staticTemperature = material == 0u ? 300.0 : previousState.r;
+  float waterTemperature = flowedState.g;
+  float airTemperature = flowedState.b;
 
-  if (material == 0u) {
-    nextTemperature = 300.0;
-    return;
+  if (material != 0u) {
+    ivec2 lastCell = ivec2(u_gridSize - 1);
+    ivec2 leftCell = max(cell + ivec2(-1, 0), ivec2(0));
+    ivec2 rightCell = min(cell + ivec2(1, 0), lastCell);
+    ivec2 lowerCell = max(cell + ivec2(0, -1), ivec2(0));
+    ivec2 upperCell = min(cell + ivec2(0, 1), lastCell);
+    float center = temperatureFor(material, flowedState);
+    float cellCapacity = volumetricHeatCapacity(material);
+    uint leftMaterial = texelFetch(u_materials, leftCell, 0).r;
+    uint rightMaterial = texelFetch(u_materials, rightCell, 0).r;
+    uint lowerMaterial = texelFetch(u_materials, lowerCell, 0).r;
+    uint upperMaterial = texelFetch(u_materials, upperCell, 0).r;
+    float heatTransfer =
+      faceHeatTransfer(leftMaterial, temperatureFor(leftMaterial, flowStateAt(leftCell)), material, center) +
+      faceHeatTransfer(rightMaterial, temperatureFor(rightMaterial, flowStateAt(rightCell)), material, center) +
+      faceHeatTransfer(lowerMaterial, temperatureFor(lowerMaterial, flowStateAt(lowerCell)), material, center) +
+      faceHeatTransfer(upperMaterial, temperatureFor(upperMaterial, flowStateAt(upperCell)), material, center);
+    float temperature = center + u_diffusionStep * heatTransfer / cellCapacity;
+
+    if (u_heaterEnabled == 1 && u_heaterArea > 0.0) {
+      vec2 cellMin = vec2(cell) * u_cellEdge;
+      vec2 cellMax = cellMin + vec2(u_cellEdge);
+      vec2 spotMin = u_heaterCenter - vec2(0.0015);
+      vec2 spotMax = u_heaterCenter + vec2(0.0015);
+      vec2 overlap = max(vec2(0.0), min(cellMax, spotMax) - max(cellMin, spotMin));
+      float overlapArea = overlap.x * overlap.y;
+      temperature += u_heatingScale * overlapArea / cellCapacity;
+    }
+
+    float neutronPower = texelFetch(u_neutronPower, cell, 0).r;
+    temperature += neutronPower * u_powerToTemperatureScale / cellCapacity;
+
+    bool isDynamic = material == 3u || material == 4u;
+    bool isEdge = cell.x == 0 || cell.y == 0 || cell.x == u_gridSize - 1 || cell.y == u_gridSize - 1;
+    if (isEdge && !isDynamic) {
+      float edgeHeatLossWatts = 1.23e-11 * (pow(center, 4.0) - 8.1e9);
+      temperature -= edgeHeatLossWatts * u_powerToTemperatureScale / cellCapacity;
+    }
+
+    if (material == 3u) waterTemperature = temperature;
+    else if (material == 4u) airTemperature = temperature;
+    else staticTemperature = temperature;
   }
 
-  ivec2 lastCell = ivec2(u_gridSize - 1);
-  ivec2 leftCell = max(cell + ivec2(-1, 0), ivec2(0));
-  ivec2 rightCell = min(cell + ivec2(1, 0), lastCell);
-  ivec2 lowerCell = max(cell + ivec2(0, -1), ivec2(0));
-  ivec2 upperCell = min(cell + ivec2(0, 1), lastCell);
-
-  float center = texelFetch(u_previous, cell, 0).r;
-  float cellCapacity = volumetricHeatCapacity(material);
-  float heatTransfer =
-    faceHeatTransfer(texelFetch(u_materials, leftCell, 0).r, texelFetch(u_previous, leftCell, 0).r, material, center) +
-    faceHeatTransfer(texelFetch(u_materials, rightCell, 0).r, texelFetch(u_previous, rightCell, 0).r, material, center) +
-    faceHeatTransfer(texelFetch(u_materials, lowerCell, 0).r, texelFetch(u_previous, lowerCell, 0).r, material, center) +
-    faceHeatTransfer(texelFetch(u_materials, upperCell, 0).r, texelFetch(u_previous, upperCell, 0).r, material, center);
-  float temperature =
-    center + u_diffusionStep * heatTransfer / cellCapacity;
-
-  if (u_heaterEnabled == 1 && u_heaterArea > 0.0) {
-    vec2 cellMin = vec2(cell) * u_cellEdge;
-    vec2 cellMax = cellMin + vec2(u_cellEdge);
-    vec2 spotMin = u_heaterCenter - vec2(0.0015);
-    vec2 spotMax = u_heaterCenter + vec2(0.0015);
-    vec2 overlap = max(
-      vec2(0.0),
-      min(cellMax, spotMax) - max(cellMin, spotMin)
-    );
-    float overlapArea = overlap.x * overlap.y;
-    temperature += u_heatingScale * overlapArea / cellCapacity;
+  float cumulativeExpelledEnergy = (cell.x == 0 && cell.y == 0) ? previousState.a : 0.0;
+  if (u_flowShift == 1 && cell.x == 0 && cell.y == 0) {
+    cumulativeExpelledEnergy += expelledHeatEnergy();
   }
-
-  float neutronPower = texelFetch(u_neutronPower, cell, 0).r;
-  temperature += neutronPower * u_powerToTemperatureScale / cellCapacity;
-
-  bool isEdge =
-    cell.x == 0 || cell.y == 0 ||
-    cell.x == u_gridSize - 1 || cell.y == u_gridSize - 1;
-  if (isEdge) {
-    float edgeHeatLossWatts =
-      1.23e-11 * (pow(center, 4.0) - 8.1e9);
-    temperature -= edgeHeatLossWatts * u_powerToTemperatureScale / cellCapacity;
-  }
-
-  nextTemperature = temperature;
+  nextState = vec4(staticTemperature, waterTemperature, airTemperature, cumulativeExpelledEnergy);
 }`;
 
   const displaySource = `#version 300 es
@@ -249,7 +314,8 @@ void main() {
   );
   cell = clamp(cell, ivec2(0), ivec2(u_gridSize - 1));
   uint material = texelFetch(u_materials, cell, 0).r;
-  float temperature = texelFetch(u_temperature, cell, 0).r;
+  vec4 state = texelFetch(u_temperature, cell, 0);
+  float temperature = material == 3u ? state.g : material == 4u ? state.b : state.r;
   vec3 displayColor = u_viewMaterials == 1
     ? materialColor(material)
     : heatColor(temperature);
@@ -290,8 +356,11 @@ void main() {
       ivec2 sourceCell = first + ivec2(x, y);
       if (sourceCell.x >= u_sourceSize.x || sourceCell.y >= u_sourceSize.y) continue;
       if (u_firstPass == 1) {
-        if (texelFetch(u_materials, sourceCell, 0).r != 0u) {
-          sumAndCount += vec2(texelFetch(u_source, sourceCell, 0).r, 1.0);
+        uint material = texelFetch(u_materials, sourceCell, 0).r;
+        if (material != 0u) {
+          vec4 state = texelFetch(u_source, sourceCell, 0);
+          float temperature = material == 3u ? state.g : material == 4u ? state.b : state.r;
+          sumAndCount += vec2(temperature, 1.0);
         }
       } else {
         sumAndCount += texelFetch(u_source, sourceCell, 0).rg;
@@ -390,6 +459,8 @@ void main() {
   let lastPaintCellX = null;
   let lastPaintCellY = null;
   let averageUpdateElapsed = 0;
+  let lastMeasuredExpelledEnergy = 0;
+  let flowShiftAccumulator = 0;
   let brushSize = 1;
 
   let playing = false;
@@ -432,8 +503,12 @@ void main() {
   }
 
   function createTargets(size) {
-    const initialTemperatures = new Float32Array(size * size);
-    initialTemperatures.fill(300.0);
+    const initialTemperatures = new Float32Array(size * size * 4);
+    for (let i = 0; i < initialTemperatures.length; i += 4) {
+      initialTemperatures[i] = 300.0;
+      initialTemperatures[i + 1] = 300.0;
+      initialTemperatures[i + 2] = 300.0;
+    }
     const created = [];
 
     try {
@@ -447,11 +522,11 @@ void main() {
         gl.texImage2D(
           gl.TEXTURE_2D,
           0,
-          gl.R32F,
+          gl.RGBA32F,
           size,
           size,
           0,
-          gl.RED,
+          gl.RGBA,
           gl.FLOAT,
           initialTemperatures
         );
@@ -600,6 +675,8 @@ void main() {
     resetButton.disabled = true;
     editButton.disabled = true;
     neutronRateInput.disabled = true;
+    flowDirectionInput.disabled = true;
+    flowSpeedInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
     return;
@@ -617,6 +694,9 @@ void main() {
     heaterArea: gl.getUniformLocation(heatProgram, "u_heaterArea"),
     heaterCenter: gl.getUniformLocation(heatProgram, "u_heaterCenter"),
     heaterEnabled: gl.getUniformLocation(heatProgram, "u_heaterEnabled"),
+    flowDirection: gl.getUniformLocation(heatProgram, "u_flowDirection"),
+    flowShift: gl.getUniformLocation(heatProgram, "u_flowShift"),
+    cellVolume: gl.getUniformLocation(heatProgram, "u_cellVolume"),
   };
 
   const displayUniforms = {
@@ -659,7 +739,7 @@ void main() {
     gl.activeTexture(gl.TEXTURE0);
   }
 
-  function drawTemperature() {
+  function drawTemperature(flowShift) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, targets[1 - currentTarget].framebuffer);
     gl.viewport(0, 0, gridSize, gridSize);
     gl.useProgram(heatProgram);
@@ -681,6 +761,9 @@ void main() {
     gl.uniform1f(heatUniforms.heaterArea, heaterArea);
     gl.uniform2f(heatUniforms.heaterCenter, heaterX, heaterY);
     gl.uniform1i(heatUniforms.heaterEnabled, heaterEnabled ? 1 : 0);
+    gl.uniform1i(heatUniforms.flowDirection, Number(flowDirectionInput.value));
+    gl.uniform1i(heatUniforms.flowShift, flowShift);
+    gl.uniform1f(heatUniforms.cellVolume, cellEdge * cellEdge * PLATE_THICKNESS);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     currentTarget = 1 - currentTarget;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -717,7 +800,19 @@ void main() {
     const finalTarget = averageTargets[averageTargets.length - 1];
     gl.bindFramebuffer(gl.FRAMEBUFFER, finalTarget.framebuffer);
     gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, result);
+    const outputEnergy = new Float32Array(4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, targets[currentTarget].framebuffer);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, outputEnergy);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    const energyDelta = Math.max(0, outputEnergy[3] - lastMeasuredExpelledEnergy);
+    const outputElapsed = averageUpdateElapsed;
+    const outputWatts = outputElapsed > 0
+      ? THERMAL_EFFICIENCY * energyDelta / outputElapsed
+      : 0;
+    thermalOutput.textContent =
+      `Thermal power output (40% efficient): ${outputWatts.toFixed(2)} W`;
+    lastMeasuredExpelledEnergy = outputEnergy[3];
 
     if (result[1] > 0) {
       averageTemperature.textContent =
@@ -864,7 +959,13 @@ void main() {
         steps < MAX_STEPS_PER_FRAME
       ) {
         if (steps === 0) uploadNeutronHeatField();
-        drawTemperature();
+        flowShiftAccumulator += Number(flowSpeedInput.value);
+        let flowShift = 0;
+        if (flowShiftAccumulator >= 1) {
+          flowShift = 1;
+          flowShiftAccumulator -= 1;
+        }
+        drawTemperature(flowShift);
         simulationTime += stepSeconds;
         accumulator -= stepSeconds;
         steps += 1;
@@ -978,12 +1079,15 @@ void main() {
     lastTimestamp = null;
     simulationTime = 0;
     averageUpdateElapsed = 0;
+    lastMeasuredExpelledEnergy = 0;
+    flowShiftAccumulator = 0;
+    thermalOutput.textContent = "Thermal power output (40% efficient): 0.00 W";
     neutronCount = 0;
     spawnRemainder = 0;
     neutronHeatField.fill(0);
     uploadNeutronHeatField();
 
-    const ambient = new Float32Array([300, 0, 0, 1]);
+    const ambient = new Float32Array([300, 300, 300, 0]);
     for (const target of targets) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, target.framebuffer);
       gl.clearBufferfv(gl.COLOR, 0, ambient);
@@ -1021,6 +1125,18 @@ void main() {
     heaterEnabled = true;
     updateHeaterGeometry();
   }
+
+  flowDirectionInput.addEventListener("input", () => {
+    const direction = Math.max(0, Math.min(3, Number(flowDirectionInput.value)));
+    flowDirectionInput.value = String(direction);
+    flowDirectionValue.textContent = FLOW_DIRECTIONS[direction];
+    flowDirectionInput.setAttribute("aria-valuetext", FLOW_DIRECTIONS[direction]);
+  });
+  flowSpeedInput.addEventListener("input", () => {
+    const speed = Math.max(0, Math.min(1, Number(flowSpeedInput.value)));
+    flowSpeedInput.value = String(speed);
+    flowSpeedValue.textContent = `${speed.toFixed(2)} cells per physics step`;
+  });
 
   neutronRateInput.addEventListener("input", () => {
     const requestedRate = Number(neutronRateInput.value);
@@ -1111,6 +1227,9 @@ void main() {
 
   updateGridPhysics(gridSize);
   updateGridInfo();
+  flowDirectionValue.textContent = FLOW_DIRECTIONS[Number(flowDirectionInput.value)];
+  flowDirectionInput.setAttribute("aria-valuetext", flowDirectionValue.textContent);
+  flowSpeedValue.textContent = `${Number(flowSpeedInput.value).toFixed(2)} cells per physics step`;
   setBrushSize(brushInput.value);
   drawCanvas();
   averageTemperature.textContent = "Average temperature: — (no material)";

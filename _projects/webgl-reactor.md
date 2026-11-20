@@ -69,18 +69,28 @@ category: STEM
     <button type="button" id="webgl-reactor-reset">Reset</button>
     <button type="button" id="webgl-reactor-edit" style="display: block; margin-top: 0.5rem;">Back to Drawing</button>
   </aside>
+
+  <aside id="webgl-reactor-flow-controls" style="flex: 0 1 220px; min-width: 180px;">
+    <label for="webgl-reactor-flow-direction"><strong>Flow Direction: <output id="webgl-reactor-flow-direction-value">Up</output></strong></label>
+    <input id="webgl-reactor-flow-direction" type="range" min="0" max="3" step="1" value="0" aria-valuetext="Up" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+    <label for="webgl-reactor-flow-speed"><strong>Flow Speed: <output id="webgl-reactor-flow-speed-value">0.00 cells per physics step</output></strong></label>
+    <input id="webgl-reactor-flow-speed" type="range" min="0" max="1" step="0.01" value="0" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+    <p id="webgl-reactor-thermal-output">Thermal power output (40% efficient): 0.00 W</p>
+  </aside>
 </div>
 
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
-  The plate is 10 m × 10 m and 1 mm thick. It starts as vacuum; paint concrete,
-  steel, water, or air with a 1–50 cell square brush. The material grid stores
-  IDs 0–4, and vacuum has no heat capacity or conduction. Heat moves between
-  neighboring cells according to their material conductivities. Concrete and
-  steel are static materials; water and air are dynamic materials. For now,
-  all materials use the same stationary solver, with no fluid motion. Edge cells continue to
-  exchange heat with 300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W
-  per edge cell. The heater remains 3 mm × 3 mm and 1,000 W. Neutrons each add
-  50 W to the material cell they occupy. Press Space to pause or play.
+  The plate is 10 m × 10 m and 1 mm thick, with a 200 × 200 material grid. It
+  starts as vacuum; paint concrete, steel, water, or air with a 1–50 cell square
+  brush. Concrete and steel are static. Water and air carry separate heat fields
+  that shift together in the selected direction; at zero flow they behave as
+  stationary materials. Their heat fields are hidden and do not interact behind
+  static solids, but retain their temperatures until exposed again. New fluid
+  entering the grid is 300 K. Heat leaving the outlet is accumulated and shown
+  as thermal power at 40% efficiency. Static edge materials exchange heat with
+  300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W per edge cell. The
+  heater is 3 mm × 3 mm and 1,000 W. Neutrons each add 50 W to the material cell
+  they occupy. Press Space to pause or play.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>
