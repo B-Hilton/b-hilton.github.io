@@ -51,9 +51,9 @@ category: STEM
   </aside>
 
   <aside id="webgl-reactor-simulation-controls" style="flex: 0 1 220px; min-width: 180px;" hidden>
-    <label for="webgl-reactor-neutron-rate"><strong>Neutrons per second</strong></label>
+    <label for="webgl-reactor-heat-rate"><strong>Heats/sec</strong></label>
     <input
-      id="webgl-reactor-neutron-rate"
+      id="webgl-reactor-heat-rate"
       type="number"
       min="0"
       max="1000"
@@ -65,7 +65,6 @@ category: STEM
     <button type="button" id="webgl-reactor-toggle" aria-pressed="true">Pause</button>
     <p id="webgl-reactor-status" role="status" aria-live="polite">Playing · 0.00 s</p>
     <p id="webgl-reactor-average" role="status" aria-live="polite">Average temperature: —</p>
-    <p id="webgl-reactor-neutron-info" role="status" aria-live="polite">Neutrons: 0 / 4095</p>
     <button type="button" id="webgl-reactor-reset">Reset</button>
     <button type="button" id="webgl-reactor-edit" style="display: block; margin-top: 0.5rem;">Back to Drawing</button>
   </aside>
@@ -96,8 +95,10 @@ category: STEM
   temperatures until exposed again. New fluid entering the grid is 300 K. Heat
   leaving the outlet is accumulated and shown as thermal power at 40% efficiency. Static edge materials exchange heat with
   300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W per edge cell. The
-  heater is 3 mm × 3 mm and 1,000 W. Neutrons each add 50 W to the material cell
-  they occupy. Press Space to pause or play.
+  heater is 3 mm × 3 mm and 1,000 W. Heats per second sets the rate of
+  random heat flashes per simulated second, each adding 50 W to one cell for a
+  single physics step. The flashes appear as brief orange points. Press Space
+  to pause or play.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>
