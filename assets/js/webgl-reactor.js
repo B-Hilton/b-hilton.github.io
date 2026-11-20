@@ -22,6 +22,7 @@
   const MAX_HEAT_STEP_SECONDS = 1 / 30;
   const SIMULATION_SPEED = 12;
   const MAX_FLOW_SPEED_METERS_PER_SECOND = 4;
+  const MAX_HEAT_TRANSPORT_MULTIPLIER = 100;
   const DEFAULT_HEAT_FLASH_RATE = 20;
   const MIN_HEAT_FLASH_RATE = 0;
   const MAX_HEAT_FLASH_RATE = 1000;
@@ -39,6 +40,7 @@
   const flowDirectionValue = document.getElementById("webgl-reactor-flow-direction-value");
   const flowSpeedInput = document.getElementById("webgl-reactor-flow-speed");
   const flowSpeedValue = document.getElementById("webgl-reactor-flow-speed-value");
+  const heatTransportInput = document.getElementById("webgl-reactor-heat-transport");
   const stepsPerFrameInput = document.getElementById("webgl-reactor-steps-per-frame");
   const stepsPerFrameValue = document.getElementById("webgl-reactor-steps-per-frame-value");
   const actualStepsPerFrame = document.getElementById("webgl-reactor-actual-steps-per-frame");
@@ -66,6 +68,7 @@
     !flowDirectionValue ||
     !flowSpeedInput ||
     !flowSpeedValue ||
+    !heatTransportInput ||
     !stepsPerFrameInput ||
     !stepsPerFrameValue ||
     !actualStepsPerFrame ||
@@ -104,6 +107,7 @@
     heatRateInput.disabled = true;
     flowDirectionInput.disabled = true;
     flowSpeedInput.disabled = true;
+    heatTransportInput.disabled = true;
     stepsPerFrameInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
@@ -120,6 +124,7 @@
     heatRateInput.disabled = true;
     flowDirectionInput.disabled = true;
     flowSpeedInput.disabled = true;
+    heatTransportInput.disabled = true;
     stepsPerFrameInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
@@ -151,6 +156,7 @@ uniform vec2 u_heaterCenter;
 uniform int u_heaterEnabled;
 uniform int u_flowDirection;
 uniform float u_flowSpeed;
+uniform float u_heatTransportMultiplier;
 
 layout(location = 0) out vec4 nextState;
 
@@ -253,7 +259,7 @@ void main() {
       faceHeatTransfer(rightMaterial, temperatureFor(rightMaterial, flowStateAt(rightCell)), material, center) +
       faceHeatTransfer(lowerMaterial, temperatureFor(lowerMaterial, flowStateAt(lowerCell)), material, center) +
       faceHeatTransfer(upperMaterial, temperatureFor(upperMaterial, flowStateAt(upperCell)), material, center);
-    float temperature = center + u_diffusionStep * heatTransfer / cellCapacity;
+    float temperature = center + u_diffusionStep * heatTransfer * u_heatTransportMultiplier / cellCapacity;
 
     if (u_heaterEnabled == 1 && u_heaterArea > 0.0) {
       vec2 cellMin = vec2(cell) * u_cellEdge;
@@ -271,7 +277,7 @@ void main() {
     bool isDynamic = material == 3u || material == 4u;
     bool isEdge = cell.x == 0 || cell.y == 0 || cell.x == u_gridSize - 1 || cell.y == u_gridSize - 1;
     if (isEdge && !isDynamic) {
-      float edgeHeatLossWatts = 1.23e-11 * (pow(center, 4.0) - 8.1e9);
+      float edgeHeatLossWatts = u_heatTransportMultiplier * 1.23e-11 * (pow(center, 4.0) - 8.1e9);
       temperature -= edgeHeatLossWatts * u_powerToTemperatureScale / cellCapacity;
     }
 
@@ -472,6 +478,7 @@ void main() {
   let averageTargets = [];
   let heatFlashRemainder = 0;
   let heatFlashRate = DEFAULT_HEAT_FLASH_RATE;
+  let heatTransportMultiplier = 1;
   let heatFlashCount = 0;
   let powerToTemperatureScale = 0;
   let randomState = ((Math.random() * 0xffffffff) ^ Date.now()) >>> 0;
@@ -702,6 +709,7 @@ void main() {
     heatRateInput.disabled = true;
     flowDirectionInput.disabled = true;
     flowSpeedInput.disabled = true;
+    heatTransportInput.disabled = true;
     stepsPerFrameInput.disabled = true;
     materialInput.disabled = true;
     brushInput.disabled = true;
@@ -722,6 +730,7 @@ void main() {
     heaterEnabled: gl.getUniformLocation(heatProgram, "u_heaterEnabled"),
     flowDirection: gl.getUniformLocation(heatProgram, "u_flowDirection"),
     flowSpeed: gl.getUniformLocation(heatProgram, "u_flowSpeed"),
+    heatTransportMultiplier: gl.getUniformLocation(heatProgram, "u_heatTransportMultiplier"),
     cellVolume: gl.getUniformLocation(heatProgram, "u_cellVolume"),
   };
 
@@ -811,8 +820,15 @@ void main() {
     gl.uniform1i(heatUniforms.heaterEnabled, heaterEnabled ? 1 : 0);
     gl.uniform1i(heatUniforms.flowDirection, Number(flowDirectionInput.value));
     const flowSpeedMetersPerSecond = Number(flowSpeedInput.value);
-    const flowStepFraction = flowSpeedMetersPerSecond * stepSeconds / (cellEdge * SIMULATION_SPEED);
+    const baseFlowFraction = Math.min(
+      1,
+      flowSpeedMetersPerSecond * stepSeconds / (cellEdge * SIMULATION_SPEED)
+    );
+    const flowStepFraction = baseFlowFraction === 0
+      ? 0
+      : 1 - Math.pow(1 - baseFlowFraction, heatTransportMultiplier);
     gl.uniform1f(heatUniforms.flowSpeed, flowStepFraction);
+    gl.uniform1f(heatUniforms.heatTransportMultiplier, heatTransportMultiplier);
     gl.uniform1f(heatUniforms.cellVolume, cellEdge * cellEdge * PLATE_THICKNESS);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     currentTarget = 1 - currentTarget;
@@ -1159,6 +1175,21 @@ void main() {
     const speed = Math.max(0, Math.min(MAX_FLOW_SPEED_METERS_PER_SECOND, Number(flowSpeedInput.value)));
     flowSpeedInput.value = String(speed);
     flowSpeedValue.textContent = `${speed.toFixed(1)} m/s`;
+  });
+
+  heatTransportInput.addEventListener("input", () => {
+    const multiplier = heatTransportInput.valueAsNumber;
+    if (
+      !Number.isFinite(multiplier) ||
+      multiplier < 0 ||
+      multiplier > MAX_HEAT_TRANSPORT_MULTIPLIER
+    ) {
+      heatTransportInput.setAttribute("aria-invalid", "true");
+      return;
+    }
+
+    heatTransportInput.removeAttribute("aria-invalid");
+    heatTransportMultiplier = multiplier;
   });
 
   stepsPerFrameInput.addEventListener("input", () => {

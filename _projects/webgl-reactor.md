@@ -85,6 +85,17 @@ category: STEM
       <input id="webgl-reactor-flow-direction" type="range" min="0" max="3" step="1" value="0" aria-valuetext="Up" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
       <label for="webgl-reactor-flow-speed"><strong>Flow Speed: <output id="webgl-reactor-flow-speed-value">0.0 m/s</output></strong></label>
       <input id="webgl-reactor-flow-speed" type="range" min="0" max="4" step="0.1" value="0" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+      <label for="webgl-reactor-heat-transport"><strong>Universal Heat Transport Multiplier</strong></label>
+      <input
+        id="webgl-reactor-heat-transport"
+        type="number"
+        min="0"
+        max="100"
+        step="0.1"
+        value="1"
+        inputmode="decimal"
+        style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;"
+      >
       <label for="webgl-reactor-steps-per-frame"><strong>Steps/Frame: <output id="webgl-reactor-steps-per-frame-value">6</output></strong></label>
       <input id="webgl-reactor-steps-per-frame" type="range" min="0" max="100" step="1" value="6" style="display: block; width: 100%; margin: 0.4rem 0 0.5rem;">
       <p style="margin-top: 0.25rem;"><strong>Actual Steps/Frame: <output id="webgl-reactor-actual-steps-per-frame">0</output></strong></p>
@@ -102,7 +113,9 @@ category: STEM
   concrete heat capacity. Concrete and steel are static. Water and air carry separate heat fields
   that advect together in the selected direction. Flow Speed is shown in m/s and
   transfers a corresponding fraction of upstream heat each physics step, up to
-  4 m/s. At zero flow they behave as stationary materials. Steps/Frame sets
+  4 m/s. At zero flow they behave as stationary materials. Universal Heat
+  Transport Multiplier scales conduction, boundary heat loss, and fluid heat
+  advection; 1 preserves the current rates and 0 stops transport. Steps/Frame sets
   the number of physics steps run each frame, from 0 to 100. Actual Steps/Frame
   shows how many steps completed in the latest frame. Their heat
   fields are hidden and do not interact behind static solids, but retain their
