@@ -102,9 +102,9 @@ category: STEM
   concrete heat capacity. Concrete and steel are static. Water and air carry separate heat fields
   that advect together in the selected direction. Flow Speed is shown in m/s and
   transfers a corresponding fraction of upstream heat each physics step, up to
-  4 m/s. At zero flow they behave as stationary materials. Steps/Frame sets a
-  manual physics step cap from 0 to 100. Actual Steps/Frame shows how many
-  steps completed in the latest frame. Their heat
+  4 m/s. At zero flow they behave as stationary materials. Steps/Frame sets
+  the number of physics steps run each frame, from 0 to 100. Actual Steps/Frame
+  shows how many steps completed in the latest frame. Their heat
   fields are hidden and do not interact behind static solids, but retain their
   temperatures until exposed again. New fluid entering the grid is 300 K. Heat
   leaving the outlet is accumulated and shown as thermal power at 40% efficiency. Static edge materials exchange heat with

@@ -26,7 +26,7 @@
   const MIN_HEAT_FLASH_RATE = 0;
   const MAX_HEAT_FLASH_RATE = 1000;
   const HEAT_FLASH_POWER_WATTS = 500;
-  const MAX_HEAT_FLASHES_PER_FRAME = 2000;
+  const MAX_HEAT_FLASHES_PER_FRAME = 4000;
   const THERMAL_EFFICIENCY = 0.4;
   const FLOW_DIRECTIONS = ["Up", "Down", "Right", "Left"];
   const heatFlashPositions = new Float32Array(MAX_HEAT_FLASHES_PER_FRAME * 2);
@@ -492,8 +492,6 @@ void main() {
 
   let playing = false;
   let simulationTime = 0;
-  let accumulator = 0;
-  let lastTimestamp = null;
   let animationFrame = null;
   let currentTarget = 0;
   let heaterEnabled = false;
@@ -934,30 +932,14 @@ void main() {
     let steps = 0;
 
     if (playing) {
-      if (lastTimestamp === null) lastTimestamp = timestamp;
-      const elapsed = Math.min(timestamp - lastTimestamp, 100) / 1000;
-      lastTimestamp = timestamp;
-      const maxStepsPerFrame = Number(stepsPerFrameInput.value);
-      const maxSimulationElapsed = stepSeconds * maxStepsPerFrame;
-      const simulationElapsed = Math.min(
-        elapsed * SIMULATION_SPEED,
-        maxSimulationElapsed
-      );
+      const stepsPerFrame = Number(stepsPerFrameInput.value);
       heatFlashCount = 0;
-      accumulator = Math.min(
-        accumulator + simulationElapsed,
-        maxSimulationElapsed
-      );
-      averageUpdateElapsed += simulationElapsed;
 
-      while (
-        accumulator >= stepSeconds &&
-        steps < maxStepsPerFrame
-      ) {
+      while (steps < stepsPerFrame) {
         prepareHeatFlashesForStep();
         drawTemperature();
         simulationTime += stepSeconds;
-        accumulator -= stepSeconds;
+        averageUpdateElapsed += stepSeconds;
         steps += 1;
       }
       actualStepsPerFrame.textContent = String(steps);
@@ -968,7 +950,6 @@ void main() {
     }
 
     render();
-
     if (playing) animationFrame = requestAnimationFrame(tick);
   }
 
@@ -981,8 +962,6 @@ void main() {
   function setPlaying(nextPlaying) {
     if (phase !== "simulating") return;
     playing = nextPlaying;
-    accumulator = 0;
-    lastTimestamp = null;
     toggleButton.textContent = playing ? "Pause" : "Play";
     toggleButton.setAttribute("aria-pressed", String(playing));
     render();
@@ -1122,8 +1101,6 @@ void main() {
     playing = false;
     toggleButton.textContent = "Play";
     toggleButton.setAttribute("aria-pressed", "false");
-    accumulator = 0;
-    lastTimestamp = null;
     simulationTime = 0;
     averageUpdateElapsed = 0;
     lastMeasuredExpelledEnergy = 0;
