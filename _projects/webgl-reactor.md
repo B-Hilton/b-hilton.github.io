@@ -76,7 +76,8 @@ category: STEM
     <label for="webgl-reactor-flow-speed"><strong>Flow Speed: <output id="webgl-reactor-flow-speed-value">0.0 m/s</output></strong></label>
     <input id="webgl-reactor-flow-speed" type="range" min="0" max="4" step="0.1" value="0" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
     <label for="webgl-reactor-steps-per-frame"><strong>Steps/Frame: <output id="webgl-reactor-steps-per-frame-value">6</output></strong></label>
-    <input id="webgl-reactor-steps-per-frame" type="range" min="0" max="100" step="1" value="6" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+    <input id="webgl-reactor-steps-per-frame" type="range" min="0" max="100" step="1" value="6" style="display: block; width: 100%; margin: 0.4rem 0 0.5rem;">
+    <p style="margin-top: 0.25rem;"><strong>Actual Steps/Frame: <output id="webgl-reactor-actual-steps-per-frame">0</output></strong></p>
     <p id="webgl-reactor-thermal-output">Thermal power output (40% efficient): 0.00 W</p>
   </aside>
 </div>
@@ -89,7 +90,8 @@ category: STEM
   transfers a corresponding fraction of upstream heat each physics step, up to
   4 m/s. At zero flow they behave as stationary materials. Steps/Frame sets the
   physics step cap from 0 to 100; it automatically decreases after two
-  consecutive frames below 30 FPS to help the simulation keep up. Their heat
+  consecutive frames below 30 FPS to help the simulation keep up. Actual
+  Steps/Frame shows how many steps completed in the latest frame. Their heat
   fields are hidden and do not interact behind static solids, but retain their
   temperatures until exposed again. New fluid entering the grid is 300 K. Heat
   leaving the outlet is accumulated and shown as thermal power at 40% efficiency. Static edge materials exchange heat with

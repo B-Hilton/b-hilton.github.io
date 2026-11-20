@@ -46,6 +46,7 @@
   const flowSpeedValue = document.getElementById("webgl-reactor-flow-speed-value");
   const stepsPerFrameInput = document.getElementById("webgl-reactor-steps-per-frame");
   const stepsPerFrameValue = document.getElementById("webgl-reactor-steps-per-frame-value");
+  const actualStepsPerFrame = document.getElementById("webgl-reactor-actual-steps-per-frame");
   const thermalOutput = document.getElementById("webgl-reactor-thermal-output");
   const drawingControls = document.getElementById("webgl-reactor-drawing-controls");
   const simulationControls = document.getElementById("webgl-reactor-simulation-controls");
@@ -70,6 +71,7 @@
     !flowSpeedValue ||
     !stepsPerFrameInput ||
     !stepsPerFrameValue ||
+    !actualStepsPerFrame ||
     !thermalOutput ||
     !drawingControls ||
     !simulationControls ||
@@ -987,6 +989,7 @@ void main() {
         accumulator -= stepSeconds;
         steps += 1;
       }
+      actualStepsPerFrame.textContent = String(steps);
       if (averageUpdateElapsed >= 0.5) {
         updateAverageTemperature();
         averageUpdateElapsed = 0;
@@ -1120,6 +1123,7 @@ void main() {
     simulationTime = 0;
     averageUpdateElapsed = 0;
     lastMeasuredExpelledEnergy = 0;
+    actualStepsPerFrame.textContent = "0";
     thermalOutput.textContent = "Thermal power output (40% efficient): 0.00 W";
     neutronCount = 0;
     spawnRemainder = 0;
