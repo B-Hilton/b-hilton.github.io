@@ -47,6 +47,16 @@ category: STEM
       value="1"
       style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;"
     >
+    <button type="button" id="webgl-reactor-export-grid">Export TXT</button>
+    <label for="webgl-reactor-import-grid" style="display: block; margin-top: 0.5rem;"><strong>Upload TXT</strong></label>
+    <input
+      id="webgl-reactor-import-grid"
+      type="file"
+      accept=".txt,text/plain"
+      aria-describedby="webgl-reactor-grid-file-status"
+      style="display: block; width: 100%; margin: 0.35rem 0 0.5rem;"
+    >
+    <p id="webgl-reactor-grid-file-status" role="status" aria-live="polite"></p>
     <button type="button" id="webgl-reactor-simulate">Simulate</button>
   </aside>
 
@@ -84,7 +94,10 @@ category: STEM
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
   The plate is 10 m × 10 m and 1 mm thick, with a 200 × 200 material grid. It
   starts as vacuum; paint concrete, steel, water, or air with a 1–50 cell square
-  brush. Concrete and steel are static. Water and air carry separate heat fields
+  brush. Export TXT or upload a 200 × 200 text grid using one hex digit (0–F)
+  per cell, with the top row first; 0 is vacuum. Reserved IDs 5–F are retained
+  and displayed distinctly, and currently simulate as insulating cells with
+  concrete heat capacity. Concrete and steel are static. Water and air carry separate heat fields
   that advect together in the selected direction. Flow Speed is shown in m/s and
   transfers a corresponding fraction of upstream heat each physics step, up to
   4 m/s. At zero flow they behave as stationary materials. Steps/Frame sets the

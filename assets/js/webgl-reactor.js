@@ -46,6 +46,9 @@
   const drawingControls = document.getElementById("webgl-reactor-drawing-controls");
   const simulationControls = document.getElementById("webgl-reactor-simulation-controls");
   const materialInput = document.getElementById("webgl-reactor-material");
+  const exportGridButton = document.getElementById("webgl-reactor-export-grid");
+  const importGridInput = document.getElementById("webgl-reactor-import-grid");
+  const gridFileStatus = document.getElementById("webgl-reactor-grid-file-status");
   const brushInput = document.getElementById("webgl-reactor-brush");
   const brushValue = document.getElementById("webgl-reactor-brush-value");
   const simulateButton = document.getElementById("webgl-reactor-simulate");
@@ -70,6 +73,9 @@
     !drawingControls ||
     !simulationControls ||
     !materialInput ||
+    !exportGridButton ||
+    !importGridInput ||
+    !gridFileStatus ||
     !brushInput ||
     !brushValue ||
     !simulateButton ||
@@ -161,7 +167,8 @@ float volumetricHeatCapacity(uint material) {
   if (material == 2u) return 7850.0 * 465.0;
   if (material == 3u) return 996.7 * 4179.7;
   if (material == 4u) return 1.1774 * 1005.7;
-  return 0.0;
+  // Reserved material IDs use a safe placeholder capacity until defined.
+  return 2300.0 * 880.0;
 }
 
 ivec2 flowSourceCell(ivec2 cell) {
@@ -316,6 +323,17 @@ vec3 materialColor(uint material) {
   if (material == 2u) return vec3(0.66, 0.76, 0.86);
   if (material == 3u) return vec3(0.06, 0.32, 0.88);
   if (material == 4u) return vec3(0.42, 0.76, 0.73);
+  if (material == 5u) return vec3(0.82, 0.35, 0.74);
+  if (material == 6u) return vec3(0.95, 0.48, 0.20);
+  if (material == 7u) return vec3(0.55, 0.72, 0.22);
+  if (material == 8u) return vec3(0.88, 0.28, 0.35);
+  if (material == 9u) return vec3(0.16, 0.68, 0.63);
+  if (material == 10u) return vec3(0.56, 0.42, 0.88);
+  if (material == 11u) return vec3(0.86, 0.70, 0.20);
+  if (material == 12u) return vec3(0.86, 0.38, 0.58);
+  if (material == 13u) return vec3(0.25, 0.64, 0.88);
+  if (material == 14u) return vec3(0.64, 0.78, 0.32);
+  if (material == 15u) return vec3(0.66, 0.68, 0.72);
   return vec3(0.015, 0.025, 0.045);
 }
 
@@ -1003,6 +1021,61 @@ void main() {
     brushValue.textContent = `${brushSize} × ${brushSize}`;
   }
 
+  function encodeGridText() {
+    const rows = [];
+    for (let y = gridSize - 1; y >= 0; y--) {
+      let row = "";
+      for (let x = 0; x < gridSize; x++) {
+        const materialId = materialIds[y * gridSize + x];
+        if (materialId > 15) {
+          throw new Error(`Material ID ${materialId} cannot be encoded in one hexadecimal digit.`);
+        }
+        row += materialId.toString(16).toUpperCase();
+      }
+      rows.push(row);
+    }
+    return rows.join("\n") + "\n";
+  }
+
+  function parseGridText(text) {
+    const normalized = text.charCodeAt(0) === 0xFEFF ? text.slice(1) : text;
+    const rows = normalized.split(/\r\n|\n|\r/);
+    if (rows[rows.length - 1] === "") rows.pop();
+    if (rows.length !== gridSize) {
+      throw new Error(`Expected ${gridSize} rows, found ${rows.length}.`);
+    }
+
+    const importedIds = new Uint8Array(gridSize * gridSize);
+    for (let row = 0; row < gridSize; row++) {
+      if (rows[row].length !== gridSize) {
+        throw new Error(`Row ${row + 1} must contain exactly ${gridSize} characters.`);
+      }
+      for (let x = 0; x < gridSize; x++) {
+        const character = rows[row][x];
+        if (!/^[0-9a-f]$/i.test(character)) {
+          throw new Error(`Invalid material code "${character}" at row ${row + 1}, column ${x + 1}.`);
+        }
+        const y = gridSize - row - 1;
+        importedIds[y * gridSize + x] = Number.parseInt(character, 16);
+      }
+    }
+    return importedIds;
+  }
+
+  function exportGrid() {
+    const contents = encodeGridText();
+    const blob = new Blob([contents], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `reactor-grid-${gridSize}x${gridSize}.txt`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    gridFileStatus.textContent = `Exported a ${gridSize} × ${gridSize} grid.`;
+  }
+
   function uploadMaterialIds() {
     gl.activeTexture(gl.TEXTURE1);
     gl.bindTexture(gl.TEXTURE_2D, materialTexture);
@@ -1162,6 +1235,23 @@ void main() {
   });
 
   brushInput.addEventListener("input", () => setBrushSize(brushInput.value));
+  exportGridButton.addEventListener("click", exportGrid);
+  importGridInput.addEventListener("change", async () => {
+    const file = importGridInput.files && importGridInput.files[0];
+    if (!file) return;
+    try {
+      if (phase !== "drawing") throw new Error("Return to drawing mode before importing a grid.");
+      const importedIds = parseGridText(await file.text());
+      materialIds.set(importedIds);
+      uploadMaterialIds();
+      render();
+      gridFileStatus.textContent = `Imported a ${gridSize} × ${gridSize} grid from ${file.name}.`;
+    } catch (error) {
+      gridFileStatus.textContent = `Import failed: ${error.message}`;
+    } finally {
+      importGridInput.value = "";
+    }
+  });
   simulateButton.addEventListener("click", startSimulation);
   resetButton.addEventListener("click", () => resetSimulation(true));
   editButton.addEventListener("click", editDrawing);
