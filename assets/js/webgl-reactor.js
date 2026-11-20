@@ -12,6 +12,7 @@
     { name: "Steel", conductivity: 54, volumetricHeatCapacity: 7850 * 465 },
     { name: "Water", conductivity: 0.61, volumetricHeatCapacity: 996.7 * 4179.7 },
     { name: "Air", conductivity: 0.02624, volumetricHeatCapacity: 1.1774 * 1005.7 },
+    { name: "Pure U235", conductivity: 12.5e-6 * (0.048e24 * 1e6 / 6.02214076e23 * 0.23504393 * 117.7), volumetricHeatCapacity: 0.048e24 * 1e6 / 6.02214076e23 * 0.23504393 * 117.7 },
   ];
   const MAX_DIFFUSIVITY = Math.max(
     ...MATERIALS.slice(1).map(
@@ -23,19 +24,28 @@
   const SIMULATION_SPEED = 12;
   const MAX_FLOW_SPEED_METERS_PER_SECOND = 4;
   const MAX_HEAT_TRANSPORT_MULTIPLIER = 100;
-  const DEFAULT_HEAT_FLASH_RATE = 20;
-  const MIN_HEAT_FLASH_RATE = 0;
-  const MAX_HEAT_FLASH_RATE = 1000;
-  const HEAT_FLASH_POWER_WATTS = 500;
-  const MAX_HEAT_FLASHES_PER_FRAME = 4000;
+  const DEFAULT_NEUTRON_SPAWN_RATE = 20;
+  const MIN_NEUTRON_SPAWN_RATE = 0;
+  const MAX_NEUTRON_SPAWN_RATE = 1000;
+  const NEUTRON_ABSORPTION_POWER_WATTS = 500;
+  const MAX_NEUTRONS = 4096;
+  const LOG_HASH_SIZE = 4096;
+  const NEUTRON_ENERGY_MIN_EV = 1;
+  const NEUTRON_ENERGY_MAX_EV = 1e7;
+  const NEUTRON_NUMBER_DENSITY_1E24 = new Float32Array([
+    0, 0.083, 0.085, 0.100, 0.000051, 0.048,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  ]);
+  const NEUTRON_SPEED_MIN = 0.05;
+  const NEUTRON_SPEED_MAX = 0.5;
   const THERMAL_EFFICIENCY = 0.4;
   const FLOW_DIRECTIONS = ["Up", "Down", "Right", "Left"];
-  const heatFlashPositions = new Float32Array(MAX_HEAT_FLASHES_PER_FRAME * 2);
   const canvas = document.getElementById("webgl-reactor-canvas");
   const toggleButton = document.getElementById("webgl-reactor-toggle");
   const status = document.getElementById("webgl-reactor-status");
   const gridInfo = document.getElementById("webgl-reactor-grid-info");
-  const heatRateInput = document.getElementById("webgl-reactor-heat-rate");
+  const neutronRateInput = document.getElementById("webgl-reactor-neutron-rate");
+  const neutronInfo = document.getElementById("webgl-reactor-neutron-info");
   const flowDirectionInput = document.getElementById("webgl-reactor-flow-direction");
   const flowDirectionValue = document.getElementById("webgl-reactor-flow-direction-value");
   const flowSpeedInput = document.getElementById("webgl-reactor-flow-speed");
@@ -63,7 +73,8 @@
     !toggleButton ||
     !status ||
     !gridInfo ||
-    !heatRateInput ||
+    !neutronRateInput ||
+    !neutronInfo ||
     !flowDirectionInput ||
     !flowDirectionValue ||
     !flowSpeedInput ||
@@ -104,7 +115,7 @@
     simulateButton.disabled = true;
     resetButton.disabled = true;
     editButton.disabled = true;
-    heatRateInput.disabled = true;
+    neutronRateInput.disabled = true;
     flowDirectionInput.disabled = true;
     flowSpeedInput.disabled = true;
     heatTransportInput.disabled = true;
@@ -121,7 +132,7 @@
     simulateButton.disabled = true;
     resetButton.disabled = true;
     editButton.disabled = true;
-    heatRateInput.disabled = true;
+    neutronRateInput.disabled = true;
     flowDirectionInput.disabled = true;
     flowSpeedInput.disabled = true;
     heatTransportInput.disabled = true;
@@ -143,7 +154,7 @@ precision highp int;
 precision highp usampler2D;
 
 uniform sampler2D u_previous;
-uniform sampler2D u_heatFlashPower;
+uniform sampler2D u_neutronPower;
 uniform usampler2D u_materials;
 uniform int u_gridSize;
 uniform float u_cellEdge;
@@ -165,6 +176,7 @@ float conductivity(uint material) {
   if (material == 2u) return 54.0;
   if (material == 3u) return 0.61;
   if (material == 4u) return 0.02624;
+  if (material == 5u) return 12.5e-6 * (0.048e24 * 1e6 / 6.02214076e23 * 0.23504393 * 117.7);
   return 0.0;
 }
 
@@ -173,6 +185,7 @@ float volumetricHeatCapacity(uint material) {
   if (material == 2u) return 7850.0 * 465.0;
   if (material == 3u) return 996.7 * 4179.7;
   if (material == 4u) return 1.1774 * 1005.7;
+  if (material == 5u) return 0.048e24 * 1e6 / 6.02214076e23 * 0.23504393 * 117.7;
   // Reserved material IDs use a safe placeholder capacity until defined.
   return 2300.0 * 880.0;
 }
@@ -271,8 +284,8 @@ void main() {
       temperature += u_heatingScale * overlapArea / cellCapacity;
     }
 
-    float heatFlashPower = texelFetch(u_heatFlashPower, cell, 0).r;
-    temperature += heatFlashPower * u_powerToTemperatureScale / cellCapacity;
+    float neutronPower = texelFetch(u_neutronPower, cell, 0).r;
+    temperature += neutronPower * u_powerToTemperatureScale / cellCapacity;
 
     bool isDynamic = material == 3u || material == 4u;
     bool isEdge = cell.x == 0 || cell.y == 0 || cell.x == u_gridSize - 1 || cell.y == u_gridSize - 1;
@@ -329,17 +342,17 @@ vec3 materialColor(uint material) {
   if (material == 2u) return vec3(0.66, 0.76, 0.86);
   if (material == 3u) return vec3(0.06, 0.32, 0.88);
   if (material == 4u) return vec3(0.42, 0.76, 0.73);
-  if (material == 5u) return vec3(0.82, 0.35, 0.74);
-  if (material == 6u) return vec3(0.95, 0.48, 0.20);
-  if (material == 7u) return vec3(0.55, 0.72, 0.22);
-  if (material == 8u) return vec3(0.88, 0.28, 0.35);
-  if (material == 9u) return vec3(0.16, 0.68, 0.63);
-  if (material == 10u) return vec3(0.56, 0.42, 0.88);
-  if (material == 11u) return vec3(0.86, 0.70, 0.20);
-  if (material == 12u) return vec3(0.86, 0.38, 0.58);
-  if (material == 13u) return vec3(0.25, 0.64, 0.88);
-  if (material == 14u) return vec3(0.64, 0.78, 0.32);
-  if (material == 15u) return vec3(0.66, 0.68, 0.72);
+  if (material == 5u) return vec3(0.90, 0.70, 0.18);
+  if (material == 6u) return vec3(0.82, 0.35, 0.74);
+  if (material == 7u) return vec3(0.95, 0.48, 0.20);
+  if (material == 8u) return vec3(0.55, 0.72, 0.22);
+  if (material == 9u) return vec3(0.88, 0.28, 0.35);
+  if (material == 10u) return vec3(0.16, 0.68, 0.63);
+  if (material == 11u) return vec3(0.56, 0.42, 0.88);
+  if (material == 12u) return vec3(0.86, 0.70, 0.20);
+  if (material == 13u) return vec3(0.86, 0.38, 0.58);
+  if (material == 14u) return vec3(0.25, 0.64, 0.88);
+  if (material == 15u) return vec3(0.64, 0.78, 0.32);
   return vec3(0.015, 0.025, 0.045);
 }
 
@@ -405,27 +418,6 @@ void main() {
   total = vec4(sumAndCount, 0.0, 1.0);
 }`;
 
-  const heatFlashVertexSource = `#version 300 es
-precision highp float;
-
-layout(location = 0) in vec2 a_position;
-uniform float u_plateSize;
-
-void main() {
-  vec2 clipPosition = (a_position / u_plateSize) * 2.0 - 1.0;
-  gl_Position = vec4(clipPosition, 0.0, 1.0);
-  gl_PointSize = 5.0;
-}`;
-
-  const heatFlashFragmentSource = `#version 300 es
-precision highp float;
-
-out vec4 color;
-
-void main() {
-  color = vec4(1.0, 0.58, 0.12, 1.0);
-}`;
-
   function compileShader(type, source) {
     const shader = gl.createShader(type);
     gl.shaderSource(shader, source);
@@ -467,19 +459,16 @@ void main() {
 
   let heatProgram;
   let displayProgram;
-  let heatFlashProgram;
   let averageProgram;
-  let heatFlashBuffer;
-  let heatFlashPowerTexture;
+  let neutronPowerTexture;
+  let neutronPowerField;
   let materialTexture;
-  let heatFlashPowerField;
   let materialIds;
   let targets = [];
   let averageTargets = [];
-  let heatFlashRemainder = 0;
-  let heatFlashRate = DEFAULT_HEAT_FLASH_RATE;
+  let neutronSpawnRemainder = 0;
+  let neutronSpawnRate = DEFAULT_NEUTRON_SPAWN_RATE;
   let heatTransportMultiplier = 1;
-  let heatFlashCount = 0;
   let powerToTemperatureScale = 0;
   let randomState = ((Math.random() * 0xffffffff) ^ Date.now()) >>> 0;
   if (randomState === 0) randomState = 1;
@@ -496,6 +485,19 @@ void main() {
   let averageUpdateElapsed = 0;
   let lastMeasuredExpelledEnergy = 0;
   let brushSize = 1;
+  const neutronPositions = new Float32Array(MAX_NEUTRONS * 2);
+  const neutronVelocities = new Float32Array(MAX_NEUTRONS * 2);
+  const neutronEnergyMeV = new Float32Array(MAX_NEUTRONS);
+  let neutronCount = 0;
+  const fissileCellIndices = new Int32Array(gridSize * gridSize);
+  const fissileCellSlotByGridIndex = new Int32Array(gridSize * gridSize);
+  fissileCellSlotByGridIndex.fill(-1);
+  let fissileCellCount = 0;
+  let crossSectionEnergies = null;
+  let crossSectionsByMaterial = null;
+  let logarithmicHash = null;
+  let hashLogMinimum = 0;
+  let hashLogStep = 0;
 
   let playing = false;
   let simulationTime = 0;
@@ -590,7 +592,7 @@ void main() {
     }
   }
 
-  function createHeatFlashPowerTexture(size) {
+  function createNeutronPowerTexture(size) {
     const texture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -685,28 +687,21 @@ void main() {
   try {
     heatProgram = createProgram(heatSource);
     displayProgram = createProgram(displaySource);
-    heatFlashProgram = createProgram(heatFlashFragmentSource, heatFlashVertexSource);
     averageProgram = createProgram(averageSource);
     targets = createTargets(gridSize);
-    heatFlashPowerTexture = createHeatFlashPowerTexture(gridSize);
+    neutronPowerTexture = createNeutronPowerTexture(gridSize);
     materialTexture = createMaterialTexture(gridSize, materialIds);
-    heatFlashPowerField = new Float32Array(gridSize * gridSize);
+    neutronPowerField = new Float32Array(gridSize * gridSize);
     averageTargets = createAverageTargets(gridSize);
 
-    heatFlashBuffer = gl.createBuffer();
-    gl.bindVertexArray(vao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, heatFlashBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, heatFlashPositions.byteLength, gl.DYNAMIC_DRAW);
-    const positionLocation = gl.getAttribLocation(heatFlashProgram, "a_position");
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+
   } catch (error) {
     engineStatus.textContent = `WebGL setup failed: ${error.message}`;
     toggleButton.disabled = true;
     simulateButton.disabled = true;
     resetButton.disabled = true;
     editButton.disabled = true;
-    heatRateInput.disabled = true;
+    neutronRateInput.disabled = true;
     flowDirectionInput.disabled = true;
     flowSpeedInput.disabled = true;
     heatTransportInput.disabled = true;
@@ -718,7 +713,7 @@ void main() {
 
   const heatUniforms = {
     previous: gl.getUniformLocation(heatProgram, "u_previous"),
-    heatFlashPower: gl.getUniformLocation(heatProgram, "u_heatFlashPower"),
+    neutronPower: gl.getUniformLocation(heatProgram, "u_neutronPower"),
     powerToTemperatureScale: gl.getUniformLocation(heatProgram, "u_powerToTemperatureScale"),
     gridSize: gl.getUniformLocation(heatProgram, "u_gridSize"),
     cellEdge: gl.getUniformLocation(heatProgram, "u_cellEdge"),
@@ -746,10 +741,6 @@ void main() {
     heaterEnabled: gl.getUniformLocation(displayProgram, "u_heaterEnabled"),
   };
 
-  const heatFlashUniforms = {
-    plateSize: gl.getUniformLocation(heatFlashProgram, "u_plateSize"),
-  };
-
   const averageUniforms = {
     source: gl.getUniformLocation(averageProgram, "u_source"),
     materials: gl.getUniformLocation(averageProgram, "u_materials"),
@@ -757,43 +748,164 @@ void main() {
     firstPass: gl.getUniformLocation(averageProgram, "u_firstPass"),
   };
 
-  function uploadHeatFlashPowerField() {
+  function uploadNeutronPowerField() {
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, heatFlashPowerTexture);
-    gl.texSubImage2D(
-      gl.TEXTURE_2D,
-      0,
-      0,
-      0,
-      gridSize,
-      gridSize,
-      gl.RED,
-      gl.FLOAT,
-      heatFlashPowerField
-    );
+    gl.bindTexture(gl.TEXTURE_2D, neutronPowerTexture);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gridSize, gridSize, gl.RED, gl.FLOAT, neutronPowerField);
     gl.activeTexture(gl.TEXTURE0);
   }
 
-  function prepareHeatFlashesForStep() {
-    heatFlashPowerField.fill(0);
-    heatFlashRemainder += stepSeconds * heatFlashRate;
-    const flashesThisStep = Math.floor(heatFlashRemainder);
-    heatFlashRemainder -= flashesThisStep;
+  function updateFissileCell(index, nextMaterialId) {
+    const oldMaterialId = materialIds[index];
+    if (oldMaterialId === 5 && nextMaterialId !== 5) {
+      const slot = fissileCellSlotByGridIndex[index];
+      const lastIndex = fissileCellIndices[--fissileCellCount];
+      fissileCellIndices[slot] = lastIndex;
+      fissileCellSlotByGridIndex[lastIndex] = slot;
+      fissileCellSlotByGridIndex[index] = -1;
+    }
+    if (oldMaterialId !== 5 && nextMaterialId === 5) {
+      fissileCellSlotByGridIndex[index] = fissileCellCount;
+      fissileCellIndices[fissileCellCount++] = index;
+    }
+    materialIds[index] = nextMaterialId;
+  }
 
-    for (let index = 0; index < flashesThisStep; index++) {
-      const x = Math.floor(randomUnit() * gridSize);
-      const y = Math.floor(randomUnit() * gridSize);
-      heatFlashPowerField[y * gridSize + x] += HEAT_FLASH_POWER_WATTS;
-
-      if (heatFlashCount < MAX_HEAT_FLASHES_PER_FRAME) {
-        const offset = heatFlashCount * 2;
-        heatFlashPositions[offset] = (x + 0.5) * cellEdge;
-        heatFlashPositions[offset + 1] = (y + 0.5) * cellEdge;
-        heatFlashCount += 1;
+  function rebuildFissileCellList() {
+    fissileCellCount = 0;
+    fissileCellSlotByGridIndex.fill(-1);
+    for (let index = 0; index < materialIds.length; index++) {
+      if (materialIds[index] === 5) {
+        fissileCellSlotByGridIndex[index] = fissileCellCount;
+        fissileCellIndices[fissileCellCount++] = index;
       }
     }
+  }
 
-    uploadHeatFlashPowerField();
+  function crossSectionAt(materialId, energyEv) {
+    if (!crossSectionEnergies || !logarithmicHash || materialId < 0 || materialId > 15) return 0;
+    const last = crossSectionEnergies.length - 1;
+    const boundedEnergy = Math.max(crossSectionEnergies[0], Math.min(crossSectionEnergies[last], energyEv));
+    const bucket = Math.max(0, Math.min(LOG_HASH_SIZE - 1,
+      Math.floor((Math.log(boundedEnergy) - hashLogMinimum) / hashLogStep)));
+    let left = logarithmicHash[bucket];
+    while (left < last - 1 && crossSectionEnergies[left + 1] < boundedEnergy) left++;
+    while (left > 0 && crossSectionEnergies[left] > boundedEnergy) left--;
+    const e0 = crossSectionEnergies[left];
+    const e1 = crossSectionEnergies[left + 1];
+    const fraction = (boundedEnergy - e0) / (e1 - e0);
+    const values = crossSectionsByMaterial[materialId];
+    return values[left] + (values[left + 1] - values[left]) * fraction;
+  }
+
+  async function loadCrossSectionGrid() {
+    const response = await fetch(canvas.dataset.neutronXsGrid);
+    if (!response.ok) throw new Error("Cross-section table request failed (" + response.status + ").");
+    const lines = (await response.text()).trim().split(/\r?\n/);
+    const header = lines[0].split(",");
+    const materialIdsByName = {
+      vacuum: 0, concrete: 1, steel: 2, water: 3, air: 4, u235: 5,
+      blank_1: 6, blank_2: 7, blank_3: 8, blank_4: 9, blank_5: 10,
+      blank_6: 11, blank_7: 12, blank_8: 13, blank_9: 14, blank_10: 15,
+    };
+    if (header[0] !== "energy_eV") throw new Error("Unexpected cross-section grid header.");
+    const columnMaterialIds = header.slice(1).map((name) => materialIdsByName[name.toLowerCase()]);
+    if (columnMaterialIds.some((id) => id === undefined)) throw new Error("Unknown material in cross-section table.");
+    crossSectionEnergies = new Float32Array(lines.length - 1);
+    crossSectionsByMaterial = Array.from({ length: 16 }, () => new Float32Array(lines.length - 1));
+    for (let row = 1; row < lines.length; row++) {
+      const fields = lines[row].split(",");
+      crossSectionEnergies[row - 1] = Number(fields[0]);
+      for (let column = 1; column < fields.length; column++) {
+        crossSectionsByMaterial[columnMaterialIds[column - 1]][row - 1] = Number(fields[column]);
+      }
+    }
+    if (crossSectionEnergies.length < 2 || crossSectionEnergies[0] <= 0) {
+      throw new Error("Cross-section table needs at least two positive energy values.");
+    }
+    logarithmicHash = new Uint16Array(LOG_HASH_SIZE);
+    hashLogMinimum = Math.log(crossSectionEnergies[0]);
+    hashLogStep = (Math.log(crossSectionEnergies[crossSectionEnergies.length - 1]) - hashLogMinimum) / LOG_HASH_SIZE;
+    let gridIndex = 0;
+    for (let bucket = 0; bucket < LOG_HASH_SIZE; bucket++) {
+      const energy = Math.exp(hashLogMinimum + bucket * hashLogStep);
+      while (gridIndex < crossSectionEnergies.length - 2 &&
+        crossSectionEnergies[gridIndex + 1] < energy) gridIndex++;
+      logarithmicHash[bucket] = gridIndex;
+    }
+  }
+
+  function removeNeutron(index) {
+    const last = --neutronCount;
+    if (index !== last) {
+      neutronPositions[index * 2] = neutronPositions[last * 2];
+      neutronPositions[index * 2 + 1] = neutronPositions[last * 2 + 1];
+      neutronVelocities[index * 2] = neutronVelocities[last * 2];
+      neutronVelocities[index * 2 + 1] = neutronVelocities[last * 2 + 1];
+      neutronEnergyMeV[index] = neutronEnergyMeV[last];
+    }
+  }
+
+  function spawnNeutron() {
+    if (neutronCount >= MAX_NEUTRONS || fissileCellCount === 0) return;
+    const cellIndex = fissileCellIndices[Math.min(fissileCellCount - 1, Math.floor(randomUnit() * fissileCellCount))];
+    const cellX = cellIndex % gridSize;
+    const cellY = Math.floor(cellIndex / gridSize);
+    const index = neutronCount++;
+    const angle = randomUnit() * Math.PI * 2;
+    const speed = NEUTRON_SPEED_MIN + randomUnit() * (NEUTRON_SPEED_MAX - NEUTRON_SPEED_MIN);
+    neutronPositions[index * 2] = (cellX + randomUnit()) * cellEdge;
+    neutronPositions[index * 2 + 1] = (cellY + randomUnit()) * cellEdge;
+    neutronVelocities[index * 2] = Math.cos(angle) * speed;
+    neutronVelocities[index * 2 + 1] = Math.sin(angle) * speed;
+    neutronEnergyMeV[index] = (NEUTRON_ENERGY_MIN_EV +
+      randomUnit() * (NEUTRON_ENERGY_MAX_EV - NEUTRON_ENERGY_MIN_EV)) * 1e-6;
+  }
+
+  function prepareNeutronsForStep() {
+    neutronPowerField.fill(0);
+    for (let index = 0; index < neutronCount;) {
+      const offset = index * 2;
+      const x = neutronPositions[offset];
+      const y = neutronPositions[offset + 1];
+      const dx = neutronVelocities[offset] * stepSeconds;
+      const dy = neutronVelocities[offset + 1] * stepSeconds;
+      const nextX = x + dx;
+      const nextY = y + dy;
+      if (nextX < 0 || nextY < 0 || nextX >= PLATE_SIZE || nextY >= PLATE_SIZE) {
+        removeNeutron(index);
+        continue;
+      }
+      const cellX = Math.min(gridSize - 1, Math.floor((x + nextX) * 0.5 / cellEdge));
+      const cellY = Math.min(gridSize - 1, Math.floor((y + nextY) * 0.5 / cellEdge));
+      const cellIndex = cellY * gridSize + cellX;
+      const materialId = materialIds[cellIndex];
+      const density = NEUTRON_NUMBER_DENSITY_1E24[materialId] || 0;
+      if (density > 0) {
+        const sigmaBarns = crossSectionAt(materialId, neutronEnergyMeV[index] * 1e6);
+        const pathLengthCm = Math.hypot(dx, dy) * 100;
+        const probability = -Math.expm1(-density * sigmaBarns * pathLengthCm);
+        if (randomUnit() < probability) {
+          neutronPowerField[cellIndex] += NEUTRON_ABSORPTION_POWER_WATTS;
+          removeNeutron(index);
+          continue;
+        }
+      }
+      neutronPositions[offset] = nextX;
+      neutronPositions[offset + 1] = nextY;
+      index++;
+    }
+
+    if (fissileCellCount > 0) {
+      neutronSpawnRemainder += stepSeconds * neutronSpawnRate;
+      let spawnCount = Math.floor(neutronSpawnRemainder);
+      neutronSpawnRemainder -= spawnCount;
+      spawnCount = Math.min(spawnCount, MAX_NEUTRONS - neutronCount);
+      for (let i = 0; i < spawnCount; i++) spawnNeutron();
+    } else {
+      neutronSpawnRemainder = 0;
+    }
+    uploadNeutronPowerField();
   }
 
   function drawTemperature() {
@@ -804,8 +916,8 @@ void main() {
     gl.bindTexture(gl.TEXTURE_2D, targets[currentTarget].texture);
     gl.uniform1i(heatUniforms.previous, 0);
     gl.activeTexture(gl.TEXTURE1);
-    gl.bindTexture(gl.TEXTURE_2D, heatFlashPowerTexture);
-    gl.uniform1i(heatUniforms.heatFlashPower, 1);
+    gl.bindTexture(gl.TEXTURE_2D, neutronPowerTexture);
+    gl.uniform1i(heatUniforms.neutronPower, 1);
     gl.uniform1f(heatUniforms.powerToTemperatureScale, powerToTemperatureScale);
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, materialTexture);
@@ -908,20 +1020,6 @@ void main() {
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
-  function drawHeatFlashes() {
-    if (phase !== "simulating" || heatFlashCount === 0) return;
-
-    gl.useProgram(heatFlashProgram);
-    gl.uniform1f(heatFlashUniforms.plateSize, PLATE_SIZE);
-    gl.bindBuffer(gl.ARRAY_BUFFER, heatFlashBuffer);
-    gl.bufferSubData(
-      gl.ARRAY_BUFFER,
-      0,
-      heatFlashPositions.subarray(0, heatFlashCount * 2)
-    );
-    gl.drawArrays(gl.POINTS, 0, heatFlashCount);
-  }
-
   function updateGridInfo() {
     gridInfo.textContent =
       `${gridSize} × ${gridSize} cells · ${(cellEdge * 1000).toFixed(3)} mm per cell`;
@@ -929,7 +1027,7 @@ void main() {
 
   function render() {
     drawCanvas();
-    drawHeatFlashes();
+    neutronInfo.textContent = "Neutrons: " + neutronCount + " / " + MAX_NEUTRONS;
     if (phase === "simulating") {
       status.textContent =
         `${playing ? "Playing" : "Paused"} · ${simulationTime.toFixed(2)} s`;
@@ -949,10 +1047,8 @@ void main() {
 
     if (playing) {
       const stepsPerFrame = Number(stepsPerFrameInput.value);
-      heatFlashCount = 0;
-
       while (steps < stepsPerFrame) {
-        prepareHeatFlashesForStep();
+        prepareNeutronsForStep();
         drawTemperature();
         simulationTime += stepSeconds;
         averageUpdateElapsed += stepSeconds;
@@ -1098,7 +1194,7 @@ void main() {
         for (let column = startX; column < endX; column++) {
           const index = row * gridSize + column;
           if (materialIds[index] !== materialId) {
-            materialIds[index] = materialId;
+            updateFissileCell(index, materialId);
             changed = true;
           }
         }
@@ -1122,10 +1218,10 @@ void main() {
     lastMeasuredExpelledEnergy = 0;
     actualStepsPerFrame.textContent = "0";
     thermalOutput.textContent = "Thermal power output (40% efficient): 0.00 W";
-    heatFlashRemainder = 0;
-    heatFlashCount = 0;
-    heatFlashPowerField.fill(0);
-    uploadHeatFlashPowerField();
+    neutronSpawnRemainder = 0;
+    neutronCount = 0;
+    neutronPowerField.fill(0);
+    uploadNeutronPowerField();
 
     const ambient = new Float32Array([300, 300, 300, 0]);
     for (const target of targets) {
@@ -1140,6 +1236,10 @@ void main() {
   }
 
   function startSimulation() {
+    if (!crossSectionsByMaterial) {
+      engineStatus.textContent = "Waiting for the cross-section table to load.";
+      return;
+    }
     phase = "simulating";
     drawingControls.hidden = true;
     simulationControls.hidden = false;
@@ -1198,19 +1298,18 @@ void main() {
     stepsPerFrameValue.textContent = String(value);
   });
 
-  heatRateInput.addEventListener("input", () => {
-    const requestedRate = Number(heatRateInput.value);
+  neutronRateInput.addEventListener("input", () => {
+    const requestedRate = Number(neutronRateInput.value);
     if (
       !Number.isInteger(requestedRate) ||
-      requestedRate < MIN_HEAT_FLASH_RATE ||
-      requestedRate > MAX_HEAT_FLASH_RATE
+      requestedRate < MIN_NEUTRON_SPAWN_RATE ||
+      requestedRate > MAX_NEUTRON_SPAWN_RATE
     ) {
-      heatRateInput.setAttribute("aria-invalid", "true");
+      neutronRateInput.setAttribute("aria-invalid", "true");
       return;
     }
-
-    heatRateInput.removeAttribute("aria-invalid");
-    heatFlashRate = requestedRate;
+    neutronRateInput.removeAttribute("aria-invalid");
+    neutronSpawnRate = requestedRate;
   });
 
   brushInput.addEventListener("input", () => setBrushSize(brushInput.value));
@@ -1222,6 +1321,7 @@ void main() {
       if (phase !== "drawing") throw new Error("Return to drawing mode before importing a grid.");
       const importedIds = parseGridText(await file.text());
       materialIds.set(importedIds);
+      rebuildFissileCellList();
       uploadMaterialIds();
       render();
       gridFileStatus.textContent = `Imported a ${gridSize} × ${gridSize} grid from ${file.name}.`;
@@ -1301,6 +1401,17 @@ void main() {
 
   updateGridPhysics(gridSize);
   updateGridInfo();
+  neutronRateInput.value = String(DEFAULT_NEUTRON_SPAWN_RATE);
+  neutronInfo.textContent = "Neutrons: 0 / " + MAX_NEUTRONS;
+  simulateButton.disabled = true;
+  engineStatus.textContent = "Loading neutron cross-section data…";
+  loadCrossSectionGrid().then(() => {
+    simulateButton.disabled = false;
+    engineStatus.textContent = "Cross-section table ready (" + crossSectionEnergies.length + " energy points).";
+  }).catch((error) => {
+    engineStatus.textContent = "Neutron cross-section loading failed: " + error.message;
+    simulateButton.disabled = true;
+  });
   flowDirectionValue.textContent = FLOW_DIRECTIONS[Number(flowDirectionInput.value)];
   flowDirectionInput.setAttribute("aria-valuetext", flowDirectionValue.textContent);
   flowSpeedValue.textContent = `${Number(flowSpeedInput.value).toFixed(1)} m/s`;
@@ -1309,3 +1420,4 @@ void main() {
   drawCanvas();
   averageTemperature.textContent = "Average temperature: — (no material)";
 })();
+

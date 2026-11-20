@@ -16,6 +16,7 @@ category: STEM
 <div style="display: grid; grid-template-columns: minmax(0, 2fr) minmax(220px, 1fr); align-items: start; gap: 1.25rem;">
   <canvas
     id="webgl-reactor-canvas"
+    data-neutron-xs-grid="{{ '/assets/data/neutron_total_xs_linearized.csv' | relative_url }}"
     width="600"
     height="600"
     role="img"
@@ -36,6 +37,7 @@ category: STEM
         <option value="2">Steel (~54 W/m·K)</option>
         <option value="3">Water (~0.61 W/m·K)</option>
         <option value="4">Air (~0.026 W/m·K)</option>
+        <option value="5">Pure U235 (~12.5 mm²/s diffusivity)</option>
       </select>
 
       <label for="webgl-reactor-brush"><strong>Brush Size: <output id="webgl-reactor-brush-value">1 × 1</output></strong></label>
@@ -62,9 +64,9 @@ category: STEM
     </aside>
 
     <aside id="webgl-reactor-simulation-controls" style="min-width: 0;" hidden>
-      <label for="webgl-reactor-heat-rate"><strong>Heats/sec</strong></label>
+      <label for="webgl-reactor-neutron-rate"><strong>Neutrons/sec</strong></label>
       <input
-        id="webgl-reactor-heat-rate"
+        id="webgl-reactor-neutron-rate"
         type="number"
         min="0"
         max="1000"
@@ -73,6 +75,7 @@ category: STEM
         inputmode="numeric"
         style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
       >
+      <p id="webgl-reactor-neutron-info">Neutrons: 0 / 4096</p>
       <button type="button" id="webgl-reactor-toggle" aria-pressed="true">Pause</button>
       <p id="webgl-reactor-status" role="status" aria-live="polite">Playing · 0.00 s</p>
       <p id="webgl-reactor-average" role="status" aria-live="polite">Average temperature: —</p>
@@ -106,26 +109,27 @@ category: STEM
 
 <p id="webgl-reactor-help" style="margin-top: 0.75rem;">
   The plate is 10 m × 10 m and 1 mm thick, with a 200 × 200 material grid. It
-  starts as vacuum; paint concrete, steel, water, or air with a 1–50 cell square
-  brush. Export TXT or upload a 200 × 200 text grid using one hex digit (0–F)
-  per cell, with the top row first; 0 is vacuum. Reserved IDs 5–F are retained
-  and displayed distinctly, and currently simulate as insulating cells with
-  concrete heat capacity. Concrete and steel are static. Water and air carry separate heat fields
-  that advect together in the selected direction. Flow Speed is shown in m/s and
-  transfers a corresponding fraction of upstream heat each physics step, up to
-  4 m/s. At zero flow they behave as stationary materials. Universal Heat
-  Transport Multiplier scales conduction, boundary heat loss, and fluid heat
-  advection; 1 preserves the current rates and 0 stops transport. Steps/Frame sets
-  the number of physics steps run each frame, from 0 to 100. Actual Steps/Frame
-  shows how many steps completed in the latest frame. Their heat
-  fields are hidden and do not interact behind static solids, but retain their
-  temperatures until exposed again. New fluid entering the grid is 300 K. Heat
-  leaving the outlet is accumulated and shown as thermal power at 40% efficiency. Static edge materials exchange heat with
-  300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W per edge cell. The
-  heater is 3 mm × 3 mm and 1,000 W. Heats per second sets the rate of
-  random heat flashes per simulated second, each adding 500 W to one cell for a
-  single physics step. The flashes appear as brief orange points. Press Space
-  to pause or play.
+  starts as vacuum; paint concrete, steel, water, air, or pure U235 with a 1–50
+  cell square brush. Export TXT or upload a 200 × 200 text grid using one hex
+  digit (0–F) per cell, with the top row first; 0 is vacuum. IDs 6–F are
+  reserved and currently simulate as insulating cells with concrete heat
+  capacity. Concrete, steel, and U235 are static; water and air flow at the
+  selected speed and direction. The universal heat transport multiplier scales
+  conduction, boundary heat loss, and fluid advection. Steps/Frame sets the
+  number of physics steps per display frame, from 0 to 100.
+  Neutrons spawn only in U235 at the selected rate, up to 4,096 live particles.
+  Their energy is sampled uniformly from 1 eV to 10 MeV and is independent of
+  their velocity. The simulation uses the compact, 2%-adaptive cross-section
+  table and a logarithmic hash for lookup. Material number densities are
+  concrete 0.083, steel 0.085, water 0.100, air 0.000051, and U235 0.048 in
+  units of 10²⁴ atoms/cm³. An absorbed neutron deposits a 500 W impulse for
+  one physics step; fission is not implemented. Neutrons are not drawn.
+  Exported/imported material grids preserve all hexadecimal IDs. New fluid
+  entering the grid is 300 K; heat leaving the outlet is shown as thermal power
+  at 40% efficiency. Static edge materials exchange heat with 300 K surroundings.
+  The pointer still applies the 1,000 W heater while simulating. Press Space to
+  pause or play.
 </p>
 
 <script src="{{ '/assets/js/webgl-reactor.js' | relative_url | bust_file_cache }}" defer></script>
+
