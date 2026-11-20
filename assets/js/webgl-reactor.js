@@ -142,7 +142,7 @@ uniform float u_heaterArea;
 uniform vec2 u_heaterCenter;
 uniform int u_heaterEnabled;
 uniform int u_flowDirection;
-uniform int u_flowShift;
+uniform float u_flowSpeed;
 
 layout(location = 0) out vec4 nextState;
 
@@ -174,10 +174,19 @@ bool insideGrid(ivec2 cell) {
 }
 
 vec4 flowStateAt(ivec2 cell) {
-  if (u_flowShift == 0) return texelFetch(u_previous, cell, 0);
+  vec4 currentState = texelFetch(u_previous, cell, 0);
+  if (u_flowSpeed <= 0.0) return currentState;
+
   ivec2 sourceCell = flowSourceCell(cell);
-  if (!insideGrid(sourceCell)) return vec4(300.0, 300.0, 300.0, 0.0);
-  return texelFetch(u_previous, sourceCell, 0);
+  vec4 upstreamState = insideGrid(sourceCell)
+    ? texelFetch(u_previous, sourceCell, 0)
+    : vec4(300.0, 300.0, 300.0, 0.0);
+  return vec4(
+    currentState.r,
+    mix(currentState.g, upstreamState.g, u_flowSpeed),
+    mix(currentState.b, upstreamState.b, u_flowSpeed),
+    currentState.a
+  );
 }
 
 float temperatureFor(uint material, vec4 state) {
@@ -203,8 +212,8 @@ float expelledHeatEnergy() {
     else if (u_flowDirection == 2) outletCell = ivec2(u_gridSize - 1, index);
     else outletCell = ivec2(0, index);
     vec4 state = texelFetch(u_previous, outletCell, 0);
-    energy += max(state.g - 300.0, 0.0) * volumetricHeatCapacity(3u) * u_cellVolume;
-    energy += max(state.b - 300.0, 0.0) * volumetricHeatCapacity(4u) * u_cellVolume;
+    energy += u_flowSpeed * max(state.g - 300.0, 0.0) * volumetricHeatCapacity(3u) * u_cellVolume;
+    energy += u_flowSpeed * max(state.b - 300.0, 0.0) * volumetricHeatCapacity(4u) * u_cellVolume;
   }
   return energy;
 }
@@ -263,7 +272,7 @@ void main() {
   }
 
   float cumulativeExpelledEnergy = (cell.x == 0 && cell.y == 0) ? previousState.a : 0.0;
-  if (u_flowShift == 1 && cell.x == 0 && cell.y == 0) {
+  if (u_flowSpeed > 0.0 && cell.x == 0 && cell.y == 0) {
     cumulativeExpelledEnergy += expelledHeatEnergy();
   }
   nextState = vec4(staticTemperature, waterTemperature, airTemperature, cumulativeExpelledEnergy);
@@ -460,7 +469,6 @@ void main() {
   let lastPaintCellY = null;
   let averageUpdateElapsed = 0;
   let lastMeasuredExpelledEnergy = 0;
-  let flowShiftAccumulator = 0;
   let brushSize = 1;
 
   let playing = false;
@@ -695,7 +703,7 @@ void main() {
     heaterCenter: gl.getUniformLocation(heatProgram, "u_heaterCenter"),
     heaterEnabled: gl.getUniformLocation(heatProgram, "u_heaterEnabled"),
     flowDirection: gl.getUniformLocation(heatProgram, "u_flowDirection"),
-    flowShift: gl.getUniformLocation(heatProgram, "u_flowShift"),
+    flowSpeed: gl.getUniformLocation(heatProgram, "u_flowSpeed"),
     cellVolume: gl.getUniformLocation(heatProgram, "u_cellVolume"),
   };
 
@@ -739,7 +747,7 @@ void main() {
     gl.activeTexture(gl.TEXTURE0);
   }
 
-  function drawTemperature(flowShift) {
+  function drawTemperature() {
     gl.bindFramebuffer(gl.FRAMEBUFFER, targets[1 - currentTarget].framebuffer);
     gl.viewport(0, 0, gridSize, gridSize);
     gl.useProgram(heatProgram);
@@ -762,7 +770,7 @@ void main() {
     gl.uniform2f(heatUniforms.heaterCenter, heaterX, heaterY);
     gl.uniform1i(heatUniforms.heaterEnabled, heaterEnabled ? 1 : 0);
     gl.uniform1i(heatUniforms.flowDirection, Number(flowDirectionInput.value));
-    gl.uniform1i(heatUniforms.flowShift, flowShift);
+    gl.uniform1f(heatUniforms.flowSpeed, Number(flowSpeedInput.value));
     gl.uniform1f(heatUniforms.cellVolume, cellEdge * cellEdge * PLATE_THICKNESS);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     currentTarget = 1 - currentTarget;
@@ -959,13 +967,7 @@ void main() {
         steps < MAX_STEPS_PER_FRAME
       ) {
         if (steps === 0) uploadNeutronHeatField();
-        flowShiftAccumulator += Number(flowSpeedInput.value);
-        let flowShift = 0;
-        if (flowShiftAccumulator >= 1) {
-          flowShift = 1;
-          flowShiftAccumulator -= 1;
-        }
-        drawTemperature(flowShift);
+        drawTemperature();
         simulationTime += stepSeconds;
         accumulator -= stepSeconds;
         steps += 1;
@@ -1080,7 +1082,6 @@ void main() {
     simulationTime = 0;
     averageUpdateElapsed = 0;
     lastMeasuredExpelledEnergy = 0;
-    flowShiftAccumulator = 0;
     thermalOutput.textContent = "Thermal power output (40% efficient): 0.00 W";
     neutronCount = 0;
     spawnRemainder = 0;

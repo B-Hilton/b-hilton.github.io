@@ -83,10 +83,12 @@ category: STEM
   The plate is 10 m × 10 m and 1 mm thick, with a 200 × 200 material grid. It
   starts as vacuum; paint concrete, steel, water, or air with a 1–50 cell square
   brush. Concrete and steel are static. Water and air carry separate heat fields
-  that shift together in the selected direction; at zero flow they behave as
-  stationary materials. Their heat fields are hidden and do not interact behind
-  static solids, but retain their temperatures until exposed again. New fluid
-  entering the grid is 300 K. Heat leaving the outlet is accumulated and shown
+  that advect together in the selected direction. Flow speed moves a fraction
+  from 0 to 1 cell per physics step, so lower settings transfer only part of the
+  upstream heat on each step. At zero flow they behave as stationary materials.
+  Their heat fields are hidden and do not interact behind static solids, but
+  retain their temperatures until exposed again. New fluid entering the grid is
+  300 K. Heat leaving the outlet is accumulated and shown
   as thermal power at 40% efficiency. Static edge materials exchange heat with
   300 K surroundings at 1.23 × 10⁻¹¹ × (T⁴ − 8.1 × 10⁹) W per edge cell. The
   heater is 3 mm × 3 mm and 1,000 W. Neutrons each add 50 W to the material cell
