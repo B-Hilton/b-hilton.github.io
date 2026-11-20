@@ -25,7 +25,7 @@
   const DEFAULT_HEAT_FLASH_RATE = 20;
   const MIN_HEAT_FLASH_RATE = 0;
   const MAX_HEAT_FLASH_RATE = 1000;
-  const HEAT_FLASH_POWER_WATTS = 50;
+  const HEAT_FLASH_POWER_WATTS = 500;
   const MAX_HEAT_FLASHES_PER_FRAME = 2000;
   const THERMAL_EFFICIENCY = 0.4;
   const FLOW_DIRECTIONS = ["Up", "Down", "Right", "Left"];
@@ -494,8 +494,6 @@ void main() {
   let simulationTime = 0;
   let accumulator = 0;
   let lastTimestamp = null;
-  let lastFrameTimestamp = null;
-  let slowFrameStreak = 0;
   let animationFrame = null;
   let currentTarget = 0;
   let heaterEnabled = false;
@@ -933,10 +931,6 @@ void main() {
 
   function tick(timestamp) {
     animationFrame = null;
-    const frameDurationMs = lastFrameTimestamp === null
-      ? 0
-      : timestamp - lastFrameTimestamp;
-    lastFrameTimestamp = timestamp;
     let steps = 0;
 
     if (playing) {
@@ -975,24 +969,6 @@ void main() {
 
     render();
 
-    if (document.visibilityState === "visible" && frameDurationMs > 1000 / 30) {
-      slowFrameStreak += 1;
-      if (slowFrameStreak > 1 && playing) {
-        const currentLimit = Number(stepsPerFrameInput.value);
-        const estimatedLimit = Math.floor(
-          steps * (1000 / 30) / frameDurationMs
-        );
-        const nextLimit = Math.max(0, Math.min(currentLimit - 1, estimatedLimit));
-        if (nextLimit < currentLimit) {
-          stepsPerFrameInput.value = String(nextLimit);
-          stepsPerFrameValue.textContent = String(nextLimit);
-        }
-        slowFrameStreak = 0;
-      }
-    } else {
-      slowFrameStreak = 0;
-    }
-
     if (playing) animationFrame = requestAnimationFrame(tick);
   }
 
@@ -1007,8 +983,6 @@ void main() {
     playing = nextPlaying;
     accumulator = 0;
     lastTimestamp = null;
-    lastFrameTimestamp = null;
-    slowFrameStreak = 0;
     toggleButton.textContent = playing ? "Pause" : "Play";
     toggleButton.setAttribute("aria-pressed", String(playing));
     render();
@@ -1150,8 +1124,6 @@ void main() {
     toggleButton.setAttribute("aria-pressed", "false");
     accumulator = 0;
     lastTimestamp = null;
-    lastFrameTimestamp = null;
-    slowFrameStreak = 0;
     simulationTime = 0;
     averageUpdateElapsed = 0;
     lastMeasuredExpelledEnergy = 0;
@@ -1216,7 +1188,6 @@ void main() {
     const value = Math.max(0, Math.min(100, Math.round(Number(stepsPerFrameInput.value))));
     stepsPerFrameInput.value = String(value);
     stepsPerFrameValue.textContent = String(value);
-    slowFrameStreak = 0;
   });
 
   heatRateInput.addEventListener("input", () => {
