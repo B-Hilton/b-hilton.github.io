@@ -31,11 +31,10 @@
   const MAX_NEUTRON_SPAWN_RATE = 1000;
   const NEUTRON_ABSORPTION_POWER_WATTS = 500;
   const MAX_NEUTRONS = 4096;
+  const NEUTRON_SPAWN_STEP_INTERVAL = 4;
   const LOG_HASH_SIZE = 4096;
   const NEUTRON_ENERGY_MIN_EV = 1;
   const NEUTRON_ENERGY_MAX_EV = 1e7;
-  const CURSOR_NEUTRON_MIN_MEV = 0.7;
-  const CURSOR_NEUTRON_MAX_MEV = 2.0;
   const NEUTRON_MASS_KG = 1.67492749804e-27;
   const ELECTRON_VOLT_JOULES = 1.602176634e-19;
 
@@ -468,6 +467,7 @@ void main() {
   let averageTargets = [];
   let neutronSpawnRemainder = 0;
   let neutronSpawnRate = DEFAULT_NEUTRON_SPAWN_RATE;
+  let neutronPhysicsStepCount = 0;
   let heatTransportMultiplier = 1;
   let powerToTemperatureScale = 0;
   let randomState = ((Math.random() * 0xffffffff) ^ Date.now()) >>> 0;
@@ -502,9 +502,6 @@ void main() {
   let simulationTime = 0;
   let animationFrame = null;
   let currentTarget = 0;
-  let cursorX = PLATE_SIZE / 2;
-  let cursorY = PLATE_SIZE / 2;
-  let cursorInside = false;
 
   function updateGridPhysics(size) {
     gridSize = size;
@@ -745,16 +742,21 @@ void main() {
     gl.activeTexture(gl.TEXTURE0);
   }
 
+  function isFissileMaterial(materialId) {
+    return materialId === 5 || materialId === 8;
+  }
+
   function updateFissileCell(index, nextMaterialId) {
     const oldMaterialId = materialIds[index];
-    if (oldMaterialId === 5 && nextMaterialId !== 5) {
+    const wasFissile = isFissileMaterial(oldMaterialId);
+    const isFissile = isFissileMaterial(nextMaterialId);
+    if (wasFissile && !isFissile) {
       const slot = fissileCellSlotByGridIndex[index];
       const lastIndex = fissileCellIndices[--fissileCellCount];
       fissileCellIndices[slot] = lastIndex;
       fissileCellSlotByGridIndex[lastIndex] = slot;
       fissileCellSlotByGridIndex[index] = -1;
-    }
-    if (oldMaterialId !== 5 && nextMaterialId === 5) {
+    } else if (!wasFissile && isFissile) {
       fissileCellSlotByGridIndex[index] = fissileCellCount;
       fissileCellIndices[fissileCellCount++] = index;
     }
@@ -765,7 +767,7 @@ void main() {
     fissileCellCount = 0;
     fissileCellSlotByGridIndex.fill(-1);
     for (let index = 0; index < materialIds.length; index++) {
-      if (materialIds[index] === 5) {
+      if (isFissileMaterial(materialIds[index])) {
         fissileCellSlotByGridIndex[index] = fissileCellCount;
         fissileCellIndices[fissileCellCount++] = index;
       }
@@ -862,13 +864,6 @@ void main() {
       energyMeV, randomUnit() * Math.PI * 2);
   }
 
-  function spawnCursorNeutron() {
-    if (!cursorInside || neutronCount >= MAX_NEUTRONS) return;
-    const energyMeV = CURSOR_NEUTRON_MIN_MEV +
-      randomUnit() * (CURSOR_NEUTRON_MAX_MEV - CURSOR_NEUTRON_MIN_MEV);
-    addNeutron(cursorX, cursorY, energyMeV, randomUnit() * Math.PI * 2);
-  }
-
   function advanceNeutron(index) {
     const offset = index * 2;
     let x = neutronPositions[offset];
@@ -927,12 +922,15 @@ void main() {
       index++;
     }
 
+    neutronPhysicsStepCount++;
     if (fissileCellCount > 0) {
       neutronSpawnRemainder += stepSeconds * neutronSpawnRate;
-      let spawnCount = Math.floor(neutronSpawnRemainder);
-      neutronSpawnRemainder -= spawnCount;
-      spawnCount = Math.min(spawnCount, MAX_NEUTRONS - neutronCount);
-      for (let i = 0; i < spawnCount; i++) spawnNeutron();
+      if (neutronPhysicsStepCount % NEUTRON_SPAWN_STEP_INTERVAL === 0) {
+        let spawnCount = Math.floor(neutronSpawnRemainder);
+        neutronSpawnRemainder -= spawnCount;
+        spawnCount = Math.min(spawnCount, MAX_NEUTRONS - neutronCount);
+        for (let i = 0; i < spawnCount; i++) spawnNeutron();
+      }
     } else {
       neutronSpawnRemainder = 0;
     }
@@ -1082,7 +1080,6 @@ void main() {
 
     if (playing) {
       const stepsPerFrame = Number(stepsPerFrameInput.value);
-      if (cursorInside) spawnCursorNeutron();
       while (steps < stepsPerFrame) {
         prepareNeutronsForStep();
         drawTemperature();
@@ -1255,6 +1252,7 @@ void main() {
     actualStepsPerFrame.textContent = "0";
     thermalOutput.textContent = "Thermal power output (40% efficient): 0.00 W";
     neutronSpawnRemainder = 0;
+    neutronPhysicsStepCount = 0;
     neutronCount = 0;
     neutronPowerField.fill(0);
     uploadNeutronPowerField();
@@ -1288,17 +1286,7 @@ void main() {
     phase = "drawing";
     drawingControls.hidden = false;
     simulationControls.hidden = true;
-    cursorInside = false;
     render();
-  }
-
-  function updateCursorFromPointer(event) {
-    const bounds = canvas.getBoundingClientRect();
-    const x = Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width));
-    const y = Math.max(0, Math.min(1, (event.clientY - bounds.top) / bounds.height));
-    cursorX = x * PLATE_SIZE;
-    cursorY = (1 - y) * PLATE_SIZE;
-    cursorInside = true;
   }
 
   flowDirectionInput.addEventListener("input", () => {
@@ -1400,8 +1388,6 @@ void main() {
       } catch {
         // Painting still works when pointer capture is unavailable.
       }
-    } else {
-      updateCursorFromPointer(event);
     }
   });
 
@@ -1410,13 +1396,7 @@ void main() {
   });
 
   canvas.addEventListener("pointermove", (event) => {
-    if (phase === "drawing") {
-      if (pointerPainting) paintAt(event);
-      return;
-    }
-
-    updateCursorFromPointer(event);
-    if (!playing) render();
+    if (phase === "drawing" && pointerPainting) paintAt(event);
   });
 
   const stopPainting = () => {
@@ -1427,13 +1407,6 @@ void main() {
   canvas.addEventListener("pointerup", stopPainting);
   canvas.addEventListener("pointercancel", stopPainting);
   canvas.addEventListener("lostpointercapture", stopPainting);
-
-  canvas.addEventListener("pointerleave", () => {
-    if (phase === "simulating") {
-      cursorInside = false;
-      if (!playing) render();
-    }
-  });
 
   updateGridPhysics(gridSize);
   updateGridInfo();

@@ -9,7 +9,7 @@ category: STEM
 
 <p>
   Draw a material layout on the grid, then press <strong>Simulate</strong>.
-  During simulation, keep the cursor over the grid to emit one fast neutron per animation frame.
+  Neutrons spawn from U235 and Pu-239 cells every fourth physics step.
 </p>
 <p id="webgl-reactor-engine-status" role="status" aria-live="polite"></p>
 
@@ -122,12 +122,11 @@ category: STEM
   direction. The universal heat transport multiplier scales
   conduction, boundary heat loss, and fluid advection. Steps/Frame sets the
   number of physics steps per display frame, from 0 to 100.
-  The cursor emits one fast neutron per animation frame while it remains over
-  the canvas. Each emitted neutron has a random direction and energy uniformly
-  sampled from 0.7 to 2 MeV. The Neutrons/sec control also emits neutrons at
-  random U235 cells; the combined live-particle cap is 4,096. Neutron energy
-  follows its velocity, and absorption is sampled from the supplied macroscopic
-  cross sections. The compact table uses a 2% adaptive error target and
+  The Neutrons/sec control accumulates its rate between spawn checks.
+  Spawn checks run every fourth physics step and choose random cells containing
+  U235 or Pu-239; the live-particle cap is 4,096. Neutron energy is sampled
+  uniformly from 1 eV to 10 MeV and sets its velocity. Absorption is sampled
+  from the supplied macroscopic cross sections. The compact table uses a 2% adaptive error target and
   logarithmic hash lookup. Absorption deposits a 500 W impulse for one physics
   step; fission is not implemented. Neutrons are not drawn.
   Exported/imported material grids preserve all hexadecimal IDs. New fluid
