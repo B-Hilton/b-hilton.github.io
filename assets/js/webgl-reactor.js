@@ -15,6 +15,10 @@
     { name: "Lead-208", conductivity: 35.3, volumetricHeatCapacity: 11310 * 129 },
     { name: "Plutonium-239", conductivity: 6.74, volumetricHeatCapacity: 19840 * 140 },
     { name: "Sodium-23", conductivity: 141, volumetricHeatCapacity: 971 * 1386 },
+    // Representative bulk densities: Be 1850, Zircaloy-4 6560, nuclear graphite 1800 kg/m³.
+    { name: "Beryllium-9", conductivity: 150, volumetricHeatCapacity: 1850 * 2100 },
+    { name: "Zircaloy", conductivity: 16, volumetricHeatCapacity: 6560 * 310 },
+    { name: "Graphite", conductivity: 110, volumetricHeatCapacity: 1800 * 1000 },
   ];
   const MAX_DIFFUSIVITY = Math.max(
     ...MATERIALS.slice(1).map(
@@ -249,6 +253,9 @@ float conductivity(uint material) {
   if (material == 7u) return 35.3;
   if (material == 8u) return 6.74;
   if (material == 9u) return 141.0;
+  if (material == 10u) return 150.0;
+  if (material == 11u) return 16.0;
+  if (material == 12u) return 110.0;
   return 0.0;
 }
 
@@ -262,6 +269,9 @@ float volumetricHeatCapacity(uint material) {
   if (material == 7u) return 11310.0 * 129.0;
   if (material == 8u) return 19840.0 * 140.0;
   if (material == 9u) return 971.0 * 1386.0;
+  if (material == 10u) return 1850.0 * 2100.0;
+  if (material == 11u) return 6560.0 * 310.0;
+  if (material == 12u) return 1800.0 * 1000.0;
   // Reserved material IDs use a safe placeholder capacity until defined.
   return 2300.0 * 880.0;
 }
@@ -867,8 +877,8 @@ void main() {
     const header = lines[0].split(",");
     const materialIdsByName = {
       vacuum: 0, concrete: 1, steel: 2, water: 3, air: 4, u235: 5,
-      cd113: 6, pb208: 7, pu239: 8, na23: 9,
-      blank_5: 10, blank_6: 11, blank_7: 12, blank_8: 13, blank_9: 14, blank_10: 15,
+      cd113: 6, pb208: 7, pu239: 8, na23: 9, be9: 10, zircaloy: 11, graphite: 12,
+      blank_8: 13, blank_9: 14, blank_10: 15,
     };
     if (header[0] !== "energy_eV") throw new Error("Unexpected cross-section grid header.");
     const columnMaterialIds = header.slice(1).map((name) => materialIdsByName[name.toLowerCase()]);
@@ -987,7 +997,8 @@ void main() {
           remainingTime = Math.max(0, remainingTime - distanceToInteraction / speed);
 
           if (materialId === 1 || materialId === 2 || materialId === 3 ||
-              materialId === 4 || materialId === 6 || materialId === 7 || materialId === 9) {
+              materialId === 4 || materialId === 6 || materialId === 7 || materialId === 9 ||
+              materialId === 10 || materialId === 11 || materialId === 12) {
             let captureProbability = 0;
             let retention = 0;
             let retentionTable = null;
@@ -1011,6 +1022,12 @@ void main() {
               }
             } else if (materialId === 7) {
               retention = LEAD_RETENTION;
+            } else if (materialId === 10) {
+              retention = 1 - 0.112;
+            } else if (materialId === 11) {
+              retention = 1 - 0.0111;
+            } else if (materialId === 12) {
+              retention = 1 - 0.084;
             } else {
               const captureThresholdMeV = materialId === 9
                 ? SODIUM_CAPTURE_THRESHOLD_MEV : THERMAL_CAPTURE_THRESHOLD_MEV;

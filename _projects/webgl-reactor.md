@@ -19,7 +19,10 @@ category: STEM
   are 1.7% and 17.5%. Lead-208 always scatters with a 0.485% KE loss. Cadmium-113
   captures below 0.8 eV, has an 80% capture chance between 0.8 eV and 10 keV, and always
   scatters above 10 keV with a 0.8% KE loss. Interactions in remaining materials remain
-  total absorption for now.
+  total absorption for now. The added 9Be, Zircaloy, and graphite always scatter,
+  retaining 88.8%, 98.89%, and 91.6% of neutron KE respectively. Their total cross
+  sections use the supplied microscopic data converted with the supplied atom number
+  densities.
 </p>
 <p id="webgl-reactor-engine-status" role="status" aria-live="polite"></p>
 
@@ -52,6 +55,9 @@ category: STEM
         <option value="7">Lead-208</option>
         <option value="8">Plutonium-239</option>
         <option value="9">Sodium-23 (dynamic)</option>
+        <option value="10">9Be</option>
+        <option value="11">Zircaloy</option>
+        <option value="12">Graphite</option>
       </select>
 
       <label for="webgl-reactor-brush"><strong>Brush Size: <output id="webgl-reactor-brush-value">1 × 1</output></strong></label>
