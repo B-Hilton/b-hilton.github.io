@@ -37,6 +37,62 @@
   const NEUTRON_ENERGY_MAX_EV = 1e7;
   const NEUTRON_MASS_KG = 1.67492749804e-27;
   const ELECTRON_VOLT_JOULES = 1.602176634e-19;
+  const ENERGY_RETENTION_LUT_SIZE = 256;
+  const MAX_SCATTERS_PER_NEUTRON_STEP = 64;
+  const SODIUM_CAPTURE_THRESHOLD_MEV = 0.08e-6;
+  const SODIUM_CAPTURE_PROBABILITY = 0.10;
+  const MIN_NEUTRON_ENERGY_MEV = 1e-15; // 1e-9 eV keeps a zero-retention draw numerically mobile.
+
+  function inverseNormalCdf(p) {
+    const a = [-39.6968302866538, 220.946098424521, -275.928510446969,
+      138.357751867269, -30.6647980661472, 2.50662827745924];
+    const b = [-54.4760987982241, 161.585836858041, -155.698979859887,
+      66.8013118877197, -13.2806815528857];
+    const c = [-0.00778489400243029, -0.322396458041136, -2.40075827716184,
+      -2.54973253934373, 4.37466414146497, 2.93816398269878];
+    const d = [0.00778469570904146, 0.32246712907004, 2.445134137143,
+      3.75440866190742];
+    const low = 0.02425;
+    const high = 1 - low;
+    if (p < low) {
+      const q = Math.sqrt(-2 * Math.log(p));
+      return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    }
+    if (p > high) {
+      const q = Math.sqrt(-2 * Math.log(1 - p));
+      return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) /
+        ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1);
+    }
+    const q = p - 0.5;
+    const r = q * q;
+    return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q /
+      (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  }
+
+  function makeRetentionTable(minimum, maximum) {
+    const table = new Float32Array(ENERGY_RETENTION_LUT_SIZE);
+    const mean = (minimum + maximum) * 0.5;
+    const lowZ = inverseNormalCdf(0.5 / ENERGY_RETENTION_LUT_SIZE);
+    for (let i = 0; i < ENERGY_RETENTION_LUT_SIZE / 2; i++) {
+      const z = inverseNormalCdf((i + 0.5) / ENERGY_RETENTION_LUT_SIZE);
+      const value = mean + (z / -lowZ) * (mean - minimum);
+      table[i] = value;
+      table[ENERGY_RETENTION_LUT_SIZE - 1 - i] = 2 * mean - value;
+    }
+    table[0] = minimum;
+    table[ENERGY_RETENTION_LUT_SIZE - 1] = maximum;
+    return table;
+  }
+
+  const WATER_RETENTION_LUT = makeRetentionTable(0, 1);
+  const AIR_RETENTION_LUT = makeRetentionTable(0.758, 1);
+  const SODIUM_RETENTION_LUT = makeRetentionTable(0.84, 1);
+  const SCATTER_DIRECTION_LUT = Array.from({ length: ENERGY_RETENTION_LUT_SIZE }, (_, i) => {
+    const angle = (i + 0.5) * Math.PI * 2 / ENERGY_RETENTION_LUT_SIZE;
+    return [Math.cos(angle), Math.sin(angle)];
+  });
+
 
   const THERMAL_EFFICIENCY = 0.4;
   const FLOW_DIRECTIONS = ["Up", "Down", "Right", "Left"];
@@ -842,14 +898,15 @@ void main() {
     return Math.sqrt(2 * energyMeV * 1e6 * ELECTRON_VOLT_JOULES / NEUTRON_MASS_KG);
   }
 
-  function addNeutron(x, y, energyMeV, angle) {
+  function addNeutron(x, y, energyMeV, directionIndex) {
     if (neutronCount >= MAX_NEUTRONS) return;
     const index = neutronCount++;
     const speed = neutronSpeedForEnergy(energyMeV);
+    const direction = SCATTER_DIRECTION_LUT[directionIndex];
     neutronPositions[index * 2] = x;
     neutronPositions[index * 2 + 1] = y;
-    neutronVelocities[index * 2] = Math.cos(angle) * speed;
-    neutronVelocities[index * 2 + 1] = Math.sin(angle) * speed;
+    neutronVelocities[index * 2] = direction[0] * speed;
+    neutronVelocities[index * 2 + 1] = direction[1] * speed;
     neutronEnergyMeV[index] = energyMeV;
   }
 
@@ -861,57 +918,102 @@ void main() {
     const energyMeV = (NEUTRON_ENERGY_MIN_EV +
       randomUnit() * (NEUTRON_ENERGY_MAX_EV - NEUTRON_ENERGY_MIN_EV)) * 1e-6;
     addNeutron((cellX + randomUnit()) * cellEdge, (cellY + randomUnit()) * cellEdge,
-      energyMeV, randomUnit() * Math.PI * 2);
+      energyMeV, Math.floor(randomUnit() * ENERGY_RETENTION_LUT_SIZE));
   }
 
   function advanceNeutron(index) {
     const offset = index * 2;
     let x = neutronPositions[offset];
     let y = neutronPositions[offset + 1];
-    const velocityX = neutronVelocities[offset];
-    const velocityY = neutronVelocities[offset + 1];
-    const speed = Math.hypot(velocityX, velocityY);
-    const directionX = velocityX / speed;
-    const directionY = velocityY / speed;
-    let remaining = speed * stepSeconds;
-    const exitX = directionX > 0
-      ? (PLATE_SIZE - x) / directionX
-      : directionX < 0 ? -x / directionX : Infinity;
-    const exitY = directionY > 0
-      ? (PLATE_SIZE - y) / directionY
-      : directionY < 0 ? -y / directionY : Infinity;
-    remaining = Math.min(remaining, exitX, exitY);
+    let remainingTime = stepSeconds;
+    let scatterCount = 0;
 
-    while (remaining > 1e-10) {
-      const adjustedX = directionX < 0 ? x - 1e-10 : x;
-      const adjustedY = directionY < 0 ? y - 1e-10 : y;
-      const cellX = Math.max(0, Math.min(gridSize - 1, Math.floor(adjustedX / cellEdge)));
-      const cellY = Math.max(0, Math.min(gridSize - 1, Math.floor(adjustedY / cellEdge)));
-      const nextBoundaryX = directionX > 0
-        ? (cellX + 1) * cellEdge : directionX < 0 ? cellX * cellEdge : Infinity;
-      const nextBoundaryY = directionY > 0
-        ? (cellY + 1) * cellEdge : directionY < 0 ? cellY * cellEdge : Infinity;
-      const distanceX = directionX === 0 ? Infinity : (nextBoundaryX - x) / directionX;
-      const distanceY = directionY === 0 ? Infinity : (nextBoundaryY - y) / directionY;
-      const segmentLength = Math.min(remaining,
-        Math.max(1e-10, distanceX), Math.max(1e-10, distanceY));
-      const materialId = materialIds[cellY * gridSize + cellX];
-      const macroscopicSigmaPerCm = crossSectionAt(materialId, neutronEnergyMeV[index] * 1e6);
-      const probability = -Math.expm1(-macroscopicSigmaPerCm * segmentLength * 100);
-      if (probability > 0 && randomUnit() < probability) {
-        neutronPowerField[cellY * gridSize + cellX] += NEUTRON_ABSORPTION_POWER_WATTS;
-        return false;
+    while (remainingTime > 1e-12 && scatterCount < MAX_SCATTERS_PER_NEUTRON_STEP) {
+      const velocityX = neutronVelocities[offset];
+      const velocityY = neutronVelocities[offset + 1];
+      const speed = Math.hypot(velocityX, velocityY);
+      if (!(speed > 0)) break;
+      const directionX = velocityX / speed;
+      const directionY = velocityY / speed;
+      const exitX = directionX > 0
+        ? (PLATE_SIZE - x) / directionX
+        : directionX < 0 ? -x / directionX : Infinity;
+      const exitY = directionY > 0
+        ? (PLATE_SIZE - y) / directionY
+        : directionY < 0 ? -y / directionY : Infinity;
+      let remainingDistance = Math.min(speed * remainingTime, exitX, exitY);
+
+      while (remainingDistance > 1e-10) {
+        const adjustedX = directionX < 0 ? x - 1e-10 : x;
+        const adjustedY = directionY < 0 ? y - 1e-10 : y;
+        const cellX = Math.max(0, Math.min(gridSize - 1, Math.floor(adjustedX / cellEdge)));
+        const cellY = Math.max(0, Math.min(gridSize - 1, Math.floor(adjustedY / cellEdge)));
+        const nextBoundaryX = directionX > 0
+          ? (cellX + 1) * cellEdge : directionX < 0 ? cellX * cellEdge : Infinity;
+        const nextBoundaryY = directionY > 0
+          ? (cellY + 1) * cellEdge : directionY < 0 ? cellY * cellEdge : Infinity;
+        const distanceX = directionX === 0 ? Infinity : (nextBoundaryX - x) / directionX;
+        const distanceY = directionY === 0 ? Infinity : (nextBoundaryY - y) / directionY;
+        const segmentLength = Math.min(remainingDistance,
+          Math.max(1e-10, distanceX), Math.max(1e-10, distanceY));
+        const cellIndex = cellY * gridSize + cellX;
+        const materialId = materialIds[cellIndex];
+        const energyMeV = neutronEnergyMeV[index];
+        const macroscopicSigmaPerCm =
+          crossSectionAt(materialId, energyMeV * 1e6);
+        const opticalDepth = macroscopicSigmaPerCm * segmentLength * 100;
+        const probability = -Math.expm1(-opticalDepth);
+        const interactionRoll = randomUnit();
+
+        if (probability > 0 && interactionRoll < probability) {
+          const distanceToInteraction = Math.min(segmentLength,
+            -Math.log1p(-interactionRoll) / (macroscopicSigmaPerCm * 100));
+          x += directionX * distanceToInteraction;
+          y += directionY * distanceToInteraction;
+          remainingTime = Math.max(0, remainingTime - distanceToInteraction / speed);
+
+          if (materialId === 3 || materialId === 4 || materialId === 9) {
+            if (materialId === 9 && energyMeV < SODIUM_CAPTURE_THRESHOLD_MEV &&
+                randomUnit() < SODIUM_CAPTURE_PROBABILITY) {
+              neutronPowerField[cellIndex] += NEUTRON_ABSORPTION_POWER_WATTS;
+              neutronPositions[offset] = x;
+              neutronPositions[offset + 1] = y;
+              return false;
+            }
+
+            const table = materialId === 3 ? WATER_RETENTION_LUT
+              : materialId === 4 ? AIR_RETENTION_LUT : SODIUM_RETENTION_LUT;
+            const retention = table[Math.floor(randomUnit() * ENERGY_RETENTION_LUT_SIZE)];
+            const newEnergyMeV = Math.max(MIN_NEUTRON_ENERGY_MEV, energyMeV * retention);
+            const newSpeed = neutronSpeedForEnergy(newEnergyMeV);
+            const newDirection =
+              SCATTER_DIRECTION_LUT[Math.floor(randomUnit() * ENERGY_RETENTION_LUT_SIZE)];
+            neutronEnergyMeV[index] = newEnergyMeV;
+            neutronVelocities[offset] = newDirection[0] * newSpeed;
+            neutronVelocities[offset + 1] = newDirection[1] * newSpeed;
+            scatterCount++;
+            remainingDistance = 0;
+            break;
+          }
+
+          // Other material interactions remain total absorption for now.
+          neutronPowerField[cellIndex] += NEUTRON_ABSORPTION_POWER_WATTS;
+          neutronPositions[offset] = x;
+          neutronPositions[offset + 1] = y;
+          return false;
+        }
+
+        x += directionX * segmentLength;
+        y += directionY * segmentLength;
+        remainingDistance -= segmentLength;
+        remainingTime = Math.max(0, remainingTime - segmentLength / speed);
       }
-      x += directionX * segmentLength;
-      y += directionY * segmentLength;
-      remaining -= segmentLength;
     }
 
     neutronPositions[offset] = x;
     neutronPositions[offset + 1] = y;
     return x > 0 && y > 0 && x < PLATE_SIZE && y < PLATE_SIZE;
   }
-
   function prepareNeutronsForStep() {
     neutronPowerField.fill(0);
     for (let index = 0; index < neutronCount;) {

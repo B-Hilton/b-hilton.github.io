@@ -9,7 +9,12 @@ category: STEM
 
 <p>
   Draw a material layout on the grid, then press <strong>Simulate</strong>.
-  Neutrons spawn from U235 and Pu-239 cells every fourth physics step.
+  Neutrons spawn from U235 and Pu-239 cells every fourth physics step. Cross sections
+  determine interaction probabilities along each neutron path. Water neutrons scatter
+  elastically and retain a normal-like sampled fraction of 0–100% of their kinetic energy
+  (mean 50%); air retains 75.8–100% (mean 87.9%); sodium retains 84–100% (mean 92%).
+  Below 0.08 eV, sodium has a 10% capture chance per interaction. Interactions in other
+  materials remain total absorption for now.
 </p>
 <p id="webgl-reactor-engine-status" role="status" aria-live="polite"></p>
 
