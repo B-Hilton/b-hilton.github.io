@@ -14,8 +14,12 @@ category: STEM
   elastically and retain a normal-like sampled fraction of 0–100% of their kinetic energy
   (mean 50%); air retains 75.8–100% (mean 87.9%); sodium retains 84–100% (mean 92%).
   Below 0.025 eV, water has a 2% capture chance and air has a 14% capture chance per
-  interaction. Below 0.08 eV, sodium has an 18% capture chance. Interactions in other
-  materials remain total absorption for now.
+  interaction. Below 0.08 eV, sodium has an 18% capture chance. Concrete and steel
+  scatter with fixed KE losses of 5.88% and 1.83%; below 0.03 eV, their capture chances
+  are 1.7% and 17.5%. Lead-208 always scatters with a 0.485% KE loss. Cadmium-113
+  captures below 0.8 eV, has an 80% capture chance between 0.8 eV and 10 keV, and always
+  scatters above 10 keV with a 0.8% KE loss. Interactions in remaining materials remain
+  total absorption for now.
 </p>
 <p id="webgl-reactor-engine-status" role="status" aria-live="polite"></p>
 

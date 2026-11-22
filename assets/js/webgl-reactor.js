@@ -44,6 +44,17 @@
   const THERMAL_CAPTURE_THRESHOLD_MEV = 0.025e-6;
   const WATER_CAPTURE_PROBABILITY = 0.02;
   const AIR_CAPTURE_PROBABILITY = 0.14;
+  const CONCRETE_CAPTURE_THRESHOLD_MEV = 0.03e-6;
+  const CONCRETE_CAPTURE_PROBABILITY = 0.017;
+  const CONCRETE_RETENTION = 1 - 0.0588;
+  const STEEL_CAPTURE_THRESHOLD_MEV = 0.03e-6;
+  const STEEL_CAPTURE_PROBABILITY = 0.175;
+  const STEEL_RETENTION = 1 - 0.0183;
+  const CADMIUM_CAPTURE_THRESHOLD_MEV = 0.8e-6;
+  const CADMIUM_SCATTER_THRESHOLD_MEV = 0.01;
+  const CADMIUM_INTERMEDIATE_CAPTURE_PROBABILITY = 0.80;
+  const CADMIUM_RETENTION = 1 - 0.008;
+  const LEAD_RETENTION = 1 - 0.00485;
   const MIN_NEUTRON_ENERGY_MEV = 1e-15; // 1e-9 eV keeps a zero-retention draw numerically mobile.
 
   function inverseNormalCdf(p) {
@@ -975,21 +986,52 @@ void main() {
           y += directionY * distanceToInteraction;
           remainingTime = Math.max(0, remainingTime - distanceToInteraction / speed);
 
-          if (materialId === 3 || materialId === 4 || materialId === 9) {
-            const captureThresholdMeV = materialId === 9
-              ? SODIUM_CAPTURE_THRESHOLD_MEV : THERMAL_CAPTURE_THRESHOLD_MEV;
-            const captureProbability = materialId === 9 ? SODIUM_CAPTURE_PROBABILITY
-              : materialId === 3 ? WATER_CAPTURE_PROBABILITY : AIR_CAPTURE_PROBABILITY;
-            if (energyMeV < captureThresholdMeV && randomUnit() < captureProbability) {
+          if (materialId === 1 || materialId === 2 || materialId === 3 ||
+              materialId === 4 || materialId === 6 || materialId === 7 || materialId === 9) {
+            let captureProbability = 0;
+            let retention = 0;
+            let retentionTable = null;
+
+            if (materialId === 1) {
+              retention = CONCRETE_RETENTION;
+              if (energyMeV < CONCRETE_CAPTURE_THRESHOLD_MEV) {
+                captureProbability = CONCRETE_CAPTURE_PROBABILITY;
+              }
+            } else if (materialId === 2) {
+              retention = STEEL_RETENTION;
+              if (energyMeV < STEEL_CAPTURE_THRESHOLD_MEV) {
+                captureProbability = STEEL_CAPTURE_PROBABILITY;
+              }
+            } else if (materialId === 6) {
+              retention = CADMIUM_RETENTION;
+              if (energyMeV < CADMIUM_CAPTURE_THRESHOLD_MEV) {
+                captureProbability = 1;
+              } else if (energyMeV < CADMIUM_SCATTER_THRESHOLD_MEV) {
+                captureProbability = CADMIUM_INTERMEDIATE_CAPTURE_PROBABILITY;
+              }
+            } else if (materialId === 7) {
+              retention = LEAD_RETENTION;
+            } else {
+              const captureThresholdMeV = materialId === 9
+                ? SODIUM_CAPTURE_THRESHOLD_MEV : THERMAL_CAPTURE_THRESHOLD_MEV;
+              captureProbability = materialId === 9 ? SODIUM_CAPTURE_PROBABILITY
+                : materialId === 3 ? WATER_CAPTURE_PROBABILITY : AIR_CAPTURE_PROBABILITY;
+              if (energyMeV >= captureThresholdMeV) captureProbability = 0;
+              retentionTable = materialId === 3 ? WATER_RETENTION_LUT
+                : materialId === 4 ? AIR_RETENTION_LUT : SODIUM_RETENTION_LUT;
+            }
+
+            if (captureProbability >= 1 ||
+                (captureProbability > 0 && randomUnit() < captureProbability)) {
               neutronPowerField[cellIndex] += NEUTRON_ABSORPTION_POWER_WATTS;
               neutronPositions[offset] = x;
               neutronPositions[offset + 1] = y;
               return false;
             }
 
-            const table = materialId === 3 ? WATER_RETENTION_LUT
-              : materialId === 4 ? AIR_RETENTION_LUT : SODIUM_RETENTION_LUT;
-            const retention = table[Math.floor(randomUnit() * ENERGY_RETENTION_LUT_SIZE)];
+            if (retentionTable) {
+              retention = retentionTable[Math.floor(randomUnit() * ENERGY_RETENTION_LUT_SIZE)];
+            }
             const newEnergyMeV = Math.max(MIN_NEUTRON_ENERGY_MEV, energyMeV * retention);
             const newSpeed = neutronSpeedForEnergy(newEnergyMeV);
             const newDirection =
@@ -1002,7 +1044,7 @@ void main() {
             break;
           }
 
-          // Other material interactions remain total absorption for now.
+          // Interactions in remaining materials remain total absorption for now.
           neutronPowerField[cellIndex] += NEUTRON_ABSORPTION_POWER_WATTS;
           neutronPositions[offset] = x;
           neutronPositions[offset + 1] = y;
