@@ -40,7 +40,10 @@
   const ENERGY_RETENTION_LUT_SIZE = 256;
   const MAX_SCATTERS_PER_NEUTRON_STEP = 64;
   const SODIUM_CAPTURE_THRESHOLD_MEV = 0.08e-6;
-  const SODIUM_CAPTURE_PROBABILITY = 0.10;
+  const SODIUM_CAPTURE_PROBABILITY = 0.18;
+  const THERMAL_CAPTURE_THRESHOLD_MEV = 0.025e-6;
+  const WATER_CAPTURE_PROBABILITY = 0.02;
+  const AIR_CAPTURE_PROBABILITY = 0.14;
   const MIN_NEUTRON_ENERGY_MEV = 1e-15; // 1e-9 eV keeps a zero-retention draw numerically mobile.
 
   function inverseNormalCdf(p) {
@@ -973,8 +976,11 @@ void main() {
           remainingTime = Math.max(0, remainingTime - distanceToInteraction / speed);
 
           if (materialId === 3 || materialId === 4 || materialId === 9) {
-            if (materialId === 9 && energyMeV < SODIUM_CAPTURE_THRESHOLD_MEV &&
-                randomUnit() < SODIUM_CAPTURE_PROBABILITY) {
+            const captureThresholdMeV = materialId === 9
+              ? SODIUM_CAPTURE_THRESHOLD_MEV : THERMAL_CAPTURE_THRESHOLD_MEV;
+            const captureProbability = materialId === 9 ? SODIUM_CAPTURE_PROBABILITY
+              : materialId === 3 ? WATER_CAPTURE_PROBABILITY : AIR_CAPTURE_PROBABILITY;
+            if (energyMeV < captureThresholdMeV && randomUnit() < captureProbability) {
               neutronPowerField[cellIndex] += NEUTRON_ABSORPTION_POWER_WATTS;
               neutronPositions[offset] = x;
               neutronPositions[offset + 1] = y;

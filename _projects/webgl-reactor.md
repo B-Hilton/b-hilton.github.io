@@ -13,7 +13,8 @@ category: STEM
   determine interaction probabilities along each neutron path. Water neutrons scatter
   elastically and retain a normal-like sampled fraction of 0–100% of their kinetic energy
   (mean 50%); air retains 75.8–100% (mean 87.9%); sodium retains 84–100% (mean 92%).
-  Below 0.08 eV, sodium has a 10% capture chance per interaction. Interactions in other
+  Below 0.025 eV, water has a 2% capture chance and air has a 14% capture chance per
+  interaction. Below 0.08 eV, sodium has an 18% capture chance. Interactions in other
   materials remain total absorption for now.
 </p>
 <p id="webgl-reactor-engine-status" role="status" aria-live="polite"></p>
