@@ -8,7 +8,8 @@ category: STEM
 ---
 
 <p>
-  Draw a material layout on the grid, then press <strong>Simulate</strong>.
+  Choose an example design or draw a material layout on the grid, then press
+  <strong>Simulate</strong>.
   Neutrons spawn from U235 and Pu-239 cells every fourth physics step. Cross sections
   determine interaction probabilities along each neutron path. Water neutrons scatter
   elastically and retain a normal-like sampled fraction of 0–100% of their kinetic energy
@@ -58,6 +59,15 @@ category: STEM
         <option value="10">9Be</option>
         <option value="11">Zircaloy</option>
         <option value="12">Graphite</option>
+      </select>
+
+      <label for="webgl-reactor-example-design"><strong>Example Design</strong></label>
+      <select id="webgl-reactor-example-design" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+        <option value="">Choose an example…</option>
+        <option value="{{ '/examples/rbmk_200x200.txt' | relative_url }}">RBMK</option>
+        <option value="{{ '/examples/blank_vacuum_200x200.txt' | relative_url }}">Blank grid: Vacuum</option>
+        <option value="{{ '/examples/blank_concrete_200x200.txt' | relative_url }}">Blank grid: Concrete</option>
+        <option value="{{ '/examples/blank_water_200x200.txt' | relative_url }}">Blank grid: Water</option>
       </select>
 
       <label for="webgl-reactor-brush"><strong>Brush Size: <output id="webgl-reactor-brush-value">1 × 1</output></strong></label>

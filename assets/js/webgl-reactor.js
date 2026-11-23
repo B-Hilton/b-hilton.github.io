@@ -134,6 +134,7 @@
   const materialInput = document.getElementById("webgl-reactor-material");
   const exportGridButton = document.getElementById("webgl-reactor-export-grid");
   const importGridInput = document.getElementById("webgl-reactor-import-grid");
+  const exampleDesignInput = document.getElementById("webgl-reactor-example-design");
   const gridFileStatus = document.getElementById("webgl-reactor-grid-file-status");
   const brushInput = document.getElementById("webgl-reactor-brush");
   const brushValue = document.getElementById("webgl-reactor-brush-value");
@@ -163,6 +164,7 @@
     !materialInput ||
     !exportGridButton ||
     !importGridInput ||
+    !exampleDesignInput ||
     !gridFileStatus ||
     !brushInput ||
     !brushValue ||
@@ -1505,6 +1507,26 @@ void main() {
 
   brushInput.addEventListener("input", () => setBrushSize(brushInput.value));
   exportGridButton.addEventListener("click", exportGrid);
+  exampleDesignInput.addEventListener("change", async () => {
+    const exampleUrl = exampleDesignInput.value;
+    const exampleName = exampleDesignInput.selectedOptions[0]?.textContent.trim();
+    if (!exampleUrl) return;
+    try {
+      if (phase !== "drawing") throw new Error("Return to drawing mode before loading an example.");
+      const response = await fetch(exampleUrl);
+      if (!response.ok) throw new Error("Example request failed (" + response.status + ").");
+      const importedIds = parseGridText(await response.text());
+      materialIds.set(importedIds);
+      rebuildFissileCellList();
+      uploadMaterialIds();
+      render();
+      gridFileStatus.textContent = "Loaded the " + exampleName + " example.";
+    } catch (error) {
+      gridFileStatus.textContent = "Example load failed: " + error.message;
+    } finally {
+      exampleDesignInput.value = "";
+    }
+  });
   importGridInput.addEventListener("change", async () => {
     const file = importGridInput.files && importGridInput.files[0];
     if (!file) return;
