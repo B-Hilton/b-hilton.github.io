@@ -9,8 +9,7 @@ profile:
   image: bryan_pic.jpg
   image_circular: false # crops the image to make it circular
   more_info: >
-    <p>500N 267E Victoria Place II</p>
-    <p>Provo, UT 84606</p>
+    <p>Provo, UT</p>
     <p>USA</p>
 
 selected_papers: false # includes a list of papers marked as "selected={true}"
