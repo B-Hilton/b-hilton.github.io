@@ -120,6 +120,7 @@
   const gridInfo = document.getElementById("webgl-reactor-grid-info");
   const neutronRateInput = document.getElementById("webgl-reactor-neutron-rate");
   const neutronInfo = document.getElementById("webgl-reactor-neutron-info");
+  const boundaryDeletedAverage = document.getElementById("webgl-reactor-boundary-deleted-average");
   const flowDirectionInput = document.getElementById("webgl-reactor-flow-direction");
   const flowDirectionValue = document.getElementById("webgl-reactor-flow-direction-value");
   const flowSpeedInput = document.getElementById("webgl-reactor-flow-speed");
@@ -150,6 +151,7 @@
     !gridInfo ||
     !neutronRateInput ||
     !neutronInfo ||
+    !boundaryDeletedAverage ||
     !flowDirectionInput ||
     !flowDirectionValue ||
     !flowSpeedInput ||
@@ -566,6 +568,11 @@ void main() {
   let averageUpdateElapsed = 0;
   let lastMeasuredExpelledEnergy = 0;
   let brushSize = 1;
+  const BOUNDARY_DELETION_AVERAGE_WINDOW = 8;
+  const boundaryDeletionHistory = new Uint32Array(BOUNDARY_DELETION_AVERAGE_WINDOW);
+  let boundaryDeletionHistoryIndex = 0;
+  let boundaryDeletionHistoryLength = 0;
+  let boundaryDeletionHistorySum = 0;
   const neutronPositions = new Float32Array(MAX_NEUTRONS * 2);
   const neutronVelocities = new Float32Array(MAX_NEUTRONS * 2);
   const neutronEnergyMeV = new Float32Array(MAX_NEUTRONS);
@@ -955,6 +962,12 @@ void main() {
     let scatterCount = 0;
 
     while (remainingTime > 1e-12 && scatterCount < MAX_SCATTERS_PER_NEUTRON_STEP) {
+      if (x <= 0 || y <= 0 || x >= PLATE_SIZE || y >= PLATE_SIZE) {
+        neutronPositions[offset] = x;
+        neutronPositions[offset + 1] = y;
+        return "boundary";
+      }
+
       const velocityX = neutronVelocities[offset];
       const velocityY = neutronVelocities[offset + 1];
       const speed = Math.hypot(velocityX, velocityY);
@@ -1079,17 +1092,36 @@ void main() {
 
     neutronPositions[offset] = x;
     neutronPositions[offset + 1] = y;
-    return x > 0 && y > 0 && x < PLATE_SIZE && y < PLATE_SIZE;
+    return x > 0 && y > 0 && x < PLATE_SIZE && y < PLATE_SIZE
+      ? true
+      : "boundary";
   }
+
+  function recordBoundaryDeletions(deletedThisStep) {
+    if (boundaryDeletionHistoryLength === BOUNDARY_DELETION_AVERAGE_WINDOW) {
+      boundaryDeletionHistorySum -= boundaryDeletionHistory[boundaryDeletionHistoryIndex];
+    } else {
+      boundaryDeletionHistoryLength++;
+    }
+    boundaryDeletionHistory[boundaryDeletionHistoryIndex] = deletedThisStep;
+    boundaryDeletionHistorySum += deletedThisStep;
+    boundaryDeletionHistoryIndex =
+      (boundaryDeletionHistoryIndex + 1) % BOUNDARY_DELETION_AVERAGE_WINDOW;
+  }
+
   function prepareNeutronsForStep() {
     neutronPowerField.fill(0);
+    let boundaryDeletedThisStep = 0;
     for (let index = 0; index < neutronCount;) {
-      if (!advanceNeutron(index)) {
+      const result = advanceNeutron(index);
+      if (result !== true) {
+        if (result === "boundary") boundaryDeletedThisStep++;
         removeNeutron(index);
         continue;
       }
       index++;
     }
+    recordBoundaryDeletions(boundaryDeletedThisStep);
 
     neutronPhysicsStepCount++;
     if (fissileCellCount > 0) {
@@ -1230,6 +1262,11 @@ void main() {
   function render() {
     drawCanvas();
     neutronInfo.textContent = "Neutrons: " + neutronCount + " / " + MAX_NEUTRONS;
+    const boundaryDeletionAverage = boundaryDeletionHistoryLength > 0
+      ? boundaryDeletionHistorySum / boundaryDeletionHistoryLength
+      : 0;
+    boundaryDeletedAverage.textContent =
+      `Boundary deletions (8-step avg): ${boundaryDeletionAverage.toFixed(2)} / physics step`;
     if (phase === "simulating") {
       status.textContent =
         `${playing ? "Playing" : "Paused"} · ${simulationTime.toFixed(2)} s`;
@@ -1422,6 +1459,10 @@ void main() {
     thermalOutput.textContent = "Thermal power output (40% efficient): 0.00 W";
     neutronSpawnRemainder = 0;
     neutronPhysicsStepCount = 0;
+    boundaryDeletionHistory.fill(0);
+    boundaryDeletionHistoryIndex = 0;
+    boundaryDeletionHistoryLength = 0;
+    boundaryDeletionHistorySum = 0;
     neutronCount = 0;
     neutronPowerField.fill(0);
     uploadNeutronPowerField();

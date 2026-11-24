@@ -106,6 +106,7 @@ category: STEM
         style="display: block; width: 100%; margin: 0.4rem 0 0.65rem;"
       >
       <p id="webgl-reactor-neutron-info">Neutrons: 0 / 4096</p>
+      <p id="webgl-reactor-boundary-deleted-average" role="status" aria-live="polite">Boundary deletions (8-step avg): 0.00 / physics step</p>
       <button type="button" id="webgl-reactor-toggle" aria-pressed="true">Pause</button>
       <p id="webgl-reactor-status" role="status" aria-live="polite">Playing · 0.00 s</p>
       <p id="webgl-reactor-average" role="status" aria-live="polite">Average temperature: —</p>
