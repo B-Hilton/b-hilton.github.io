@@ -980,7 +980,24 @@ void main() {
       const exitY = directionY > 0
         ? (PLATE_SIZE - y) / directionY
         : directionY < 0 ? -y / directionY : Infinity;
-      let remainingDistance = Math.min(speed * remainingTime, exitX, exitY);
+      const travelDistance = speed * remainingTime;
+      let remainingDistance = Math.min(travelDistance, exitX, exitY);
+      if (remainingDistance <= 1e-10) {
+        const exitsAtX = exitX <= travelDistance && exitX <= exitY;
+        const exitsAtY = exitY <= travelDistance && exitY <= exitX;
+        if (exitsAtX || exitsAtY) {
+          if (exitsAtX) x = directionX > 0 ? PLATE_SIZE : 0;
+          if (exitsAtY) y = directionY > 0 ? PLATE_SIZE : 0;
+          neutronPositions[offset] = x;
+          neutronPositions[offset + 1] = y;
+          return "boundary";
+        }
+
+        x += directionX * remainingDistance;
+        y += directionY * remainingDistance;
+        remainingTime = Math.max(0, remainingTime - remainingDistance / speed);
+        break;
+      }
 
       while (remainingDistance > 1e-10) {
         const adjustedX = directionX < 0 ? x - 1e-10 : x;
