@@ -10,6 +10,8 @@ category: STEM
 <p>
   Choose an example design or draw a material layout on the grid, then press
   <strong>Simulate</strong>.
+  Flow direction includes Through, which cools each water, air, and sodium cell toward
+  300 K by the flow fraction each physics step without shifting heat between cells.
   Neutrons spawn from U235 and Pu-239 cells every fourth physics step. Cross sections
   determine interaction probabilities along each neutron path. Water neutrons scatter
   elastically and retain a normal-like sampled fraction of 0–100% of their kinetic energy
@@ -118,7 +120,7 @@ category: STEM
 
     <aside id="webgl-reactor-flow-controls" style="min-width: 0;">
       <label for="webgl-reactor-flow-direction"><strong>Flow Direction: <output id="webgl-reactor-flow-direction-value">Up</output></strong></label>
-      <input id="webgl-reactor-flow-direction" type="range" min="0" max="3" step="1" value="0" aria-valuetext="Up" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
+      <input id="webgl-reactor-flow-direction" type="range" min="0" max="4" step="1" value="0" aria-valuetext="Up" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
       <label for="webgl-reactor-flow-speed"><strong>Flow Speed: <output id="webgl-reactor-flow-speed-value">0.0 m/s</output></strong></label>
       <input id="webgl-reactor-flow-speed" type="range" min="0" max="4" step="0.1" value="0" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
       <label for="webgl-reactor-heat-transport"><strong>Universal Heat Transport Multiplier</strong></label>

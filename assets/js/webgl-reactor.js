@@ -113,7 +113,7 @@
 
 
   const THERMAL_EFFICIENCY = 0.4;
-  const FLOW_DIRECTIONS = ["Up", "Down", "Right", "Left"];
+  const FLOW_DIRECTIONS = ["Up", "Down", "Right", "Left", "Through"];
   const canvas = document.getElementById("webgl-reactor-canvas");
   const toggleButton = document.getElementById("webgl-reactor-toggle");
   const status = document.getElementById("webgl-reactor-status");
@@ -294,6 +294,15 @@ bool insideGrid(ivec2 cell) {
 vec4 flowStateAt(ivec2 cell) {
   vec4 currentState = texelFetch(u_previous, cell, 0);
   if (u_flowSpeed <= 0.0) return currentState;
+  if (u_flowDirection == 4) {
+    uint material = texelFetch(u_materials, cell, 0).r;
+    if (material == 3u && currentState.g > 300.0) {
+      currentState.g = mix(currentState.g, 300.0, u_flowSpeed);
+    } else if (material == 4u && currentState.b > 300.0) {
+      currentState.b = mix(currentState.b, 300.0, u_flowSpeed);
+    }
+    return currentState;
+  }
 
   ivec2 sourceCell = flowSourceCell(cell);
   vec4 upstreamState = insideGrid(sourceCell)
@@ -310,6 +319,10 @@ vec4 flowStateAt(ivec2 cell) {
 float sodiumFlowAt(ivec2 cell) {
   float currentTemperature = texelFetch(u_sodiumPrevious, cell, 0).r;
   if (u_flowSpeed <= 0.0) return currentTemperature;
+  if (u_flowDirection == 4) {
+    return texelFetch(u_materials, cell, 0).r == 9u && currentTemperature > 300.0
+      ? mix(currentTemperature, 300.0, u_flowSpeed) : currentTemperature;
+  }
   ivec2 sourceCell = flowSourceCell(cell);
   float upstreamTemperature = insideGrid(sourceCell)
     ? texelFetch(u_sodiumPrevious, sourceCell, 0).r
@@ -330,23 +343,6 @@ float faceHeatTransfer(uint neighborMaterial, float neighborTemperature, uint ma
   float materialK = conductivity(material);
   float faceK = 2.0 * materialK * neighborK / (materialK + neighborK);
   return faceK * (neighborTemperature - center);
-}
-
-float expelledHeatEnergy() {
-  float energy = 0.0;
-  for (int index = 0; index < 200; index++) {
-    ivec2 outletCell;
-    if (u_flowDirection == 0) outletCell = ivec2(index, u_gridSize - 1);
-    else if (u_flowDirection == 1) outletCell = ivec2(index, 0);
-    else if (u_flowDirection == 2) outletCell = ivec2(u_gridSize - 1, index);
-    else outletCell = ivec2(0, index);
-    vec4 state = texelFetch(u_previous, outletCell, 0);
-    energy += u_flowSpeed * max(state.g - 300.0, 0.0) * volumetricHeatCapacity(3u) * u_cellVolume;
-    energy += u_flowSpeed * max(state.b - 300.0, 0.0) * volumetricHeatCapacity(4u) * u_cellVolume;
-    float sodiumTemperature = texelFetch(u_sodiumPrevious, outletCell, 0).r;
-    energy += u_flowSpeed * max(sodiumTemperature - 300.0, 0.0) * volumetricHeatCapacity(9u) * u_cellVolume;
-  }
-  return energy;
 }
 
 void main() {
@@ -394,10 +390,40 @@ void main() {
     else staticTemperature = temperature;
   }
 
-  float cumulativeExpelledEnergy = (cell.x == 0 && cell.y == 0) ? previousState.a : 0.0;
-  if (u_flowSpeed > 0.0 && cell.x == 0 && cell.y == 0) {
-    cumulativeExpelledEnergy += expelledHeatEnergy();
+  float localExpelledEnergy = 0.0;
+  if (u_flowSpeed > 0.0) {
+    if (u_flowDirection == 4) {
+      if (material == 3u) {
+        localExpelledEnergy = u_flowSpeed * max(previousState.g - 300.0, 0.0) *
+          volumetricHeatCapacity(3u) * u_cellVolume;
+      } else if (material == 4u) {
+        localExpelledEnergy = u_flowSpeed * max(previousState.b - 300.0, 0.0) *
+          volumetricHeatCapacity(4u) * u_cellVolume;
+      } else if (material == 9u) {
+        float sodiumBeforeCooling = texelFetch(u_sodiumPrevious, cell, 0).r;
+        localExpelledEnergy = u_flowSpeed * max(sodiumBeforeCooling - 300.0, 0.0) *
+          volumetricHeatCapacity(9u) * u_cellVolume;
+      }
+    } else {
+      bool isOutletCell =
+        (u_flowDirection == 0 && cell.y == u_gridSize - 1) ||
+        (u_flowDirection == 1 && cell.y == 0) ||
+        (u_flowDirection == 2 && cell.x == u_gridSize - 1) ||
+        (u_flowDirection == 3 && cell.x == 0);
+      if (isOutletCell && material == 3u) {
+        localExpelledEnergy = u_flowSpeed * max(previousState.g - 300.0, 0.0) *
+          volumetricHeatCapacity(3u) * u_cellVolume;
+      } else if (isOutletCell && material == 4u) {
+        localExpelledEnergy = u_flowSpeed * max(previousState.b - 300.0, 0.0) *
+          volumetricHeatCapacity(4u) * u_cellVolume;
+      } else if (isOutletCell && material == 9u) {
+        float sodiumAtOutlet = texelFetch(u_sodiumPrevious, cell, 0).r;
+        localExpelledEnergy = u_flowSpeed * max(sodiumAtOutlet - 300.0, 0.0) *
+          volumetricHeatCapacity(9u) * u_cellVolume;
+      }
+    }
   }
+  float cumulativeExpelledEnergy = previousState.a + localExpelledEnergy;
   nextState = vec4(staticTemperature, waterTemperature, airTemperature, cumulativeExpelledEnergy);
   nextSodiumTemperature = sodiumTemperature;
 }`;
@@ -480,25 +506,26 @@ layout(location = 0) out vec4 total;
 
 void main() {
   ivec2 first = ivec2(gl_FragCoord.xy) * 2;
-  vec2 sumAndCount = vec2(0.0);
+  vec3 sumCountEnergy = vec3(0.0);
   for (int y = 0; y < 2; y++) {
     for (int x = 0; x < 2; x++) {
       ivec2 sourceCell = first + ivec2(x, y);
       if (sourceCell.x >= u_sourceSize.x || sourceCell.y >= u_sourceSize.y) continue;
       if (u_firstPass == 1) {
+        vec4 state = texelFetch(u_source, sourceCell, 0);
+        sumCountEnergy.z += state.a;
         uint material = texelFetch(u_materials, sourceCell, 0).r;
         if (material != 0u) {
-          vec4 state = texelFetch(u_source, sourceCell, 0);
           float sodiumTemperature = texelFetch(u_sodiumSource, sourceCell, 0).r;
           float temperature = material == 3u ? state.g : material == 4u ? state.b : material == 9u ? sodiumTemperature : state.r;
-          sumAndCount += vec2(temperature, 1.0);
+          sumCountEnergy.xy += vec2(temperature, 1.0);
         }
       } else {
-        sumAndCount += texelFetch(u_source, sourceCell, 0).rg;
+        sumCountEnergy += texelFetch(u_source, sourceCell, 0).rgb;
       }
     }
   }
-  total = vec4(sumAndCount, 0.0, 1.0);
+  total = vec4(sumCountEnergy, 0.0);
 }`;
 
   function compileShader(type, source) {
@@ -1228,19 +1255,16 @@ void main() {
     const finalTarget = averageTargets[averageTargets.length - 1];
     gl.bindFramebuffer(gl.FRAMEBUFFER, finalTarget.framebuffer);
     gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, result);
-    const outputEnergy = new Float32Array(4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, targets[currentTarget].framebuffer);
-    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.FLOAT, outputEnergy);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-    const energyDelta = Math.max(0, outputEnergy[3] - lastMeasuredExpelledEnergy);
+    const energyDelta = Math.max(0, result[2] - lastMeasuredExpelledEnergy);
     const outputElapsed = averageUpdateElapsed;
     const outputWatts = outputElapsed > 0
       ? THERMAL_EFFICIENCY * energyDelta / outputElapsed
       : 0;
     thermalOutput.textContent =
       `Thermal power output (40% efficient): ${outputWatts.toFixed(2)} W`;
-    lastMeasuredExpelledEnergy = outputEnergy[3];
+    lastMeasuredExpelledEnergy = result[2];
 
     if (result[1] > 0) {
       averageTemperature.textContent =
@@ -1517,7 +1541,7 @@ void main() {
   }
 
   flowDirectionInput.addEventListener("input", () => {
-    const direction = Math.max(0, Math.min(3, Number(flowDirectionInput.value)));
+    const direction = Math.max(0, Math.min(FLOW_DIRECTIONS.length - 1, Number(flowDirectionInput.value)));
     flowDirectionInput.value = String(direction);
     flowDirectionValue.textContent = FLOW_DIRECTIONS[direction];
     flowDirectionInput.setAttribute("aria-valuetext", FLOW_DIRECTIONS[direction]);
