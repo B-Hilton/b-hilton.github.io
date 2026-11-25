@@ -65,6 +65,8 @@ category: STEM
       <select id="webgl-reactor-example-design" style="display: block; width: 100%; margin: 0.4rem 0 0.75rem;">
         <option value="">Choose an example…</option>
         <option value="{{ '/examples/rbmk_200x200.txt' | relative_url }}">RBMK</option>
+        <option value="{{ '/examples/ap1000_200x200.txt' | relative_url }}">AP1000</option>
+        <option value="{{ '/examples/chicago_pile_1_200x200.txt' | relative_url }}">Chicago Pile-1</option>
         <option value="{{ '/examples/blank_vacuum_200x200.txt' | relative_url }}">Blank grid: Vacuum</option>
         <option value="{{ '/examples/blank_concrete_200x200.txt' | relative_url }}">Blank grid: Concrete</option>
         <option value="{{ '/examples/blank_water_200x200.txt' | relative_url }}">Blank grid: Water</option>
