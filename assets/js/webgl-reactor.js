@@ -1603,6 +1603,11 @@ void main() {
       uploadMaterialIds();
       render();
       gridFileStatus.textContent = "Loaded the " + exampleName + " example.";
+      const defaultFlowDirection = exampleDesignInput.selectedOptions[0]?.dataset.flowDirection;
+      if (defaultFlowDirection !== undefined) {
+        flowDirectionInput.value = defaultFlowDirection;
+        flowDirectionInput.dispatchEvent(new Event("input"));
+      }
     } catch (error) {
       gridFileStatus.textContent = "Example load failed: " + error.message;
     } finally {
