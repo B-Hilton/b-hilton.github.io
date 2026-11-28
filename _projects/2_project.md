@@ -10,6 +10,24 @@ category: STEM
 
 Helping out with the BYU chapter of American Nuclear Society has been great. So far, I've organized and hosted the opening social, attended a few symposiums, toured some nuclear facilities, and met with some really cool professionals. I'm currently learning OpenMC, designing and building cloud chambers and other classroom demos, building an easy-to-use interactive Monte Carlo neutron transport simulation, and serving in educational outreach.
 
+### Outreach and presentations
+
+My work with the BYU chapter includes educational outreach, scientific demonstrations, and presentations that make nuclear science approachable. In one hands-on activity, participants explored plasma dynamics; I also gave a presentation introducing nuclear fusion. These events reflect the chapter's broader effort to share nuclear science through accessible, interactive learning.
+
+<div class="row justify-content-sm-center">
+    <div class="col-sm-4 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/past_projects/ans_plasma_dynamics_activity.jpg" title="Participants taking part in a plasma dynamics activity" class="img-fluid rounded z-depth-1" %}
+        <div class="caption">
+            A hands-on activity exploring plasma dynamics.
+        </div>
+    </div>
+    <div class="col-sm-8 mt-3 mt-md-0">
+        {% include figure.liquid path="assets/img/past_projects/ans_nuclear_fusion_presentation.webp" title="Presenting to a group about nuclear fusion" class="img-fluid rounded z-depth-1" %}
+        <div class="caption">
+            Presenting an introduction to nuclear fusion.
+        </div>
+    </div>
+</div>
 
 <div class="row justify-content-sm-center">
     <div class="col-sm-4 mt-3 mt-md-0">
